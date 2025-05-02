@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/widgets/navbar.dart';
 
-class Recommend extends StatelessWidget {
-  const Recommend({super.key});
+class PlantRecommendScreen extends StatelessWidget {
+  const PlantRecommendScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -44,7 +44,9 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
     } else if (index == 1) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => Recommend(),
+          pageBuilder:
+              (context, animation, secondaryAnimation) =>
+                  PlantRecommendScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
@@ -52,7 +54,8 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
     } else if (index == 2) {
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => PlantBook(),
+          pageBuilder:
+              (context, animation, secondaryAnimation) => PlantBookScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
