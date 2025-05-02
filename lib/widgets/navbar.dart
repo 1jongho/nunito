@@ -66,7 +66,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 70,
+      height: 100,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -101,11 +101,22 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
       onTap: () => _onItemTapped(index, context),
       child: Container(
         padding: EdgeInsets.all(12),
-        child: SvgPicture.asset(
-          _selectedIndex == index ? selectedIcon : unselectedIcon,
-          width: 32,
-          height: 32,
-        ),
+        child:
+            _selectedIndex == index
+                ? Stack(
+                  children: [
+                    Positioned(
+                      bottom: 0,
+                      child: SvgPicture.asset(
+                        'assets/icon/icon_shadow.svg',
+                        width: 10,
+                        height: 10,
+                      ),
+                    ),
+                    SvgPicture.asset(selectedIcon, width: 34, height: 34),
+                  ],
+                )
+                : SvgPicture.asset(unselectedIcon, width: 32, height: 32),
       ),
     );
   }
