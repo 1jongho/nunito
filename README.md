@@ -22,3 +22,8 @@ samples, guidance on mobile development, and a full API reference.
 1. Podfile의 iOS 버전: `platform :ios, '14.0'`
 2. AppFrameworkInfo.plist의 MinimumOSVersion: `14.0`
 3. Xcode에서 Runner 프로젝트 설정의 iOS 배포 타겟: `14.0`
+
+## 폴더 역할
+
+- Services: 컨트롤러 + 서비스 | (Firebase 기능 접근 및 비즈니스 로직)
+- Models: 데이터 구조 정의
