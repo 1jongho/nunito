@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nunito/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:nunito/screens/homeScreen.dart';
+import 'package:nunito/screens/modaltest.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
