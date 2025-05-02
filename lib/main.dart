@@ -27,9 +27,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'nunito',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: ThemeData(),
       home: HomeScreen(),
     );
   }
