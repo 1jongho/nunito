@@ -28,7 +28,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'nunito',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(),
+      theme: ThemeData(
+        scaffoldBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.light(surface: Colors.white),
+      ),
       home: HomeScreen(),
     );
   }
