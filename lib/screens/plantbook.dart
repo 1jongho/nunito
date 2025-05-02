@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/widgets/navbar.dart';
 
-class PlantBook extends StatelessWidget {
-  const PlantBook({super.key});
+class PlantBookScreen extends StatelessWidget {
+  const PlantBookScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
