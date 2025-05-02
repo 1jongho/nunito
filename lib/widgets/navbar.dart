@@ -68,12 +68,12 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
     return Container(
       height: 100,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Color(0xFFFFFFFF),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: Offset(0, -2),
+            blurRadius: 0.1,
+            offset: Offset(0, 0),
           ),
         ],
       ),
@@ -100,7 +100,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
     return InkWell(
       onTap: () => _onItemTapped(index, context),
       child: Container(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.all(30),
         child:
             _selectedIndex == index
                 ? Stack(
