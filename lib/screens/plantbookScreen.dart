@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/widgets/navbar.dart';
+import 'package:nunito/screens/addplantScreen.dart';
 
 class PlantBookScreen extends StatelessWidget {
   const PlantBookScreen({super.key});
@@ -149,7 +150,10 @@ class PlantBookScreen extends StatelessWidget {
     final customGreen = Color(0xFF0BB57F);
 
     return InkWell(
-      onTap: () {}, // 아직 기능 없음
+      onTap: () {
+        // 식물 상세 정보 페이지로 이동
+        // 예: Navigator.push(context, MaterialPageRoute(...));
+      },
       child: Container(
         padding: EdgeInsets.symmetric(
           horizontal: size.width * 0.04,
@@ -185,26 +189,41 @@ class PlantBookScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.add, size: isTablet ? 24 : 25, color: customGreen),
+            // + 아이콘 클릭 시 AddPlantScreen으로 이동하도록 수정
+            InkWell(
+              onTap: () {
+                // 식물 추가 화면으로 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddPlantScreen()),
+                );
+              },
+              child: Icon(
+                Icons.add,
+                size: isTablet ? 24 : 25,
+                color: customGreen,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // 그리드 아이템 위젯
+  // _buildPlantCategoryGridItem 함수도 동일하게 수정
   Widget _buildPlantCategoryGridItem(
     BuildContext context,
     String name,
     bool isTablet,
   ) {
-    // 0BB57F 색상 정의
     final customGreen = Color(0xFF0BB57F);
 
     return Card(
       elevation: 2,
       child: InkWell(
-        onTap: () {}, // 아직 기능 없음
+        onTap: () {
+          // 식물 상세 정보 페이지로 이동
+        },
         child: Padding(
           padding: EdgeInsets.all(12),
           child: Row(
@@ -230,8 +249,21 @@ class PlantBookScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // 화살표를 +모양으로 변경하고 색상을 0BB57F로 설정
-              Icon(Icons.add, size: isTablet ? 24 : 20, color: customGreen),
+              // + 아이콘 클릭 시 AddPlantScreen으로 이동하도록 수정
+              InkWell(
+                onTap: () {
+                  // 식물 추가 화면으로 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AddPlantScreen()),
+                  );
+                },
+                child: Icon(
+                  Icons.add,
+                  size: isTablet ? 24 : 20,
+                  color: customGreen,
+                ),
+              ),
             ],
           ),
         ),

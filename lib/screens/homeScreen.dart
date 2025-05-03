@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/screens/plantmyScreen.dart';
-import 'package:nunito/screens/plantaddScreen.dart';
+import 'package:nunito/screens/addplantScreen.dart';
 import 'package:nunito/screens/settingScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -173,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPlantInfo() {
     return Transform.translate(
       offset: Offset(0, -140),
-      child: Container(
+      child: SizedBox(
         width: 280,
         height: 75,
         child: Stack(
@@ -293,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => PlantAddScreen()),
+            MaterialPageRoute(builder: (context) => AddPlantScreen()),
           );
         },
         style: ElevatedButton.styleFrom(
