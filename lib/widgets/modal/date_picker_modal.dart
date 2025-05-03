@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class DatePickerModal extends StatefulWidget {
   // 초기 날짜 설정 (기본값 오늘)
