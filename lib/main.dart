@@ -2,8 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:nunito/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:nunito/screens/homeScreen.dart';
-import 'package:nunito/screens/modaltest.dart';
+import 'package:nunito/screens/introScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +31,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.light(surface: Colors.white),
       ),
-      home: HomeScreen(),
+      home: IntroScreen(),
     );
   }
 }
