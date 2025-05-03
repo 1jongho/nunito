@@ -50,3 +50,7 @@ flutter:
         - asset: assets/fonts/Pretendard-Regular.ttf
         - asset: assets/fonts/Pretendard-SemiBold.ttf
         - asset: assets/fonts/Pretendard-Thin.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Bold.ttf
+        - asset: assets/fonts/Nunito-SemiBold.ttf

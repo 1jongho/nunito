@@ -47,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopBar() {
-    return Transform.translate(
-      offset: Offset(0, 60),
+    return Padding(
+      padding: EdgeInsets.only(top: 60),
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -67,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 32,
                 color: Color(0xFF363636),
               ),
-              splashColor: Colors.transparent, // 터치 시 물결 효과 제거
+              splashColor: Colors.transparent,
               highlightColor: Colors.transparent,
               onPressed: () {
                 Navigator.push(
@@ -85,7 +85,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPlantCard() {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.only(top: 5, bottom: 50, left: 10, right: 10),
+        padding: const EdgeInsets.only(
+          top: 5,
+          bottom: 140,
+          left: 10,
+          right: 10,
+        ),
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -113,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   if (_currentPage > 0) {
                     _pageController.previousPage(
-                      duration: Duration(milliseconds: 200),
+                      duration: Duration(milliseconds: 400),
                       curve: Curves.easeInOut,
                     );
                   }
@@ -131,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onPressed: () {
                   if (_currentPage < 2) {
                     _pageController.nextPage(
-                      duration: Duration(milliseconds: 200),
+                      duration: Duration(milliseconds: 400),
                       curve: Curves.easeInOut,
                     );
                   }
@@ -234,33 +239,33 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPageIndicator() {
     return Transform.translate(
       offset: Offset(0, -120),
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 20),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 30,
-              decoration: ShapeDecoration(
-                color: const Color(0xCCF3F3F3),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PlantMyScreen()),
+          );
+        },
+        child: Container(
+          margin: EdgeInsets.symmetric(vertical: 20),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 30,
+                decoration: ShapeDecoration(
+                  color: const Color(0xCCF3F3F3),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                3,
-                (index) => GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PlantMyScreen()),
-                    );
-                  },
-                  child: Container(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  3,
+                  (index) => Container(
                     width: 10,
                     height: 10,
                     margin: EdgeInsets.symmetric(horizontal: 5),
@@ -274,8 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
