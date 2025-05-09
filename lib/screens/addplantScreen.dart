@@ -5,7 +5,9 @@ import 'package:nunito/widgets/modal/date_picker_modal.dart'; // 날짜 선택�
 import 'package:intl/intl.dart';
 
 class AddPlantScreen extends StatefulWidget {
-  const AddPlantScreen({super.key});
+  final String? scientificName; // 학명 파라미터 추가
+
+  const AddPlantScreen({super.key, this.scientificName});
 
   @override
   State<AddPlantScreen> createState() => _AddPlantScreenState();
@@ -18,6 +20,35 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   String? selectedPlantType;
   Map<String, dynamic> plantDetails = {};
   DateTime selectedDate = DateTime.now();
+
+  // 컨트롤러 추가
+  late TextEditingController _scientificNameController;
+  final TextEditingController _nicknameController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 학명 컨트롤러 초기화 및 값 설정
+    _scientificNameController = TextEditingController(
+      text: widget.scientificName ?? '',
+    );
+
+    // 학명이 있으면 plantDetails에 추가
+    if (widget.scientificName != null) {
+      plantDetails['scientificName'] = widget.scientificName;
+    }
+
+    // 날짜 초기화
+    plantDetails['startDate'] = DateFormat('yyyy/MM/dd').format(selectedDate);
+  }
+
+  @override
+  void dispose() {
+    _scientificNameController.dispose(); // 컨트롤러 해제
+    _nicknameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +189,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 SizedBox(width: 16),
                 Expanded(
                   child: TextField(
+                    controller: _nicknameController,
                     decoration: InputDecoration(
                       hintText: '반려 식물의 애칭을 정해주세요.',
                       border: InputBorder.none,
@@ -200,6 +232,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 SizedBox(width: 16),
                 Expanded(
                   child: TextField(
+                    controller: _scientificNameController, // 컨트롤러 사용
                     decoration: InputDecoration(
                       hintText: '반려 식물의 학명을 입력해주세요.',
                       border: InputBorder.none,
@@ -323,44 +356,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
-  Widget _buildAlarmSettingItem(String title, String value) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Pretendard',
-              color: Color(0xFF0BB57F),
-            ),
-          ),
-          Spacer(),
-          Text(value, style: TextStyle(fontSize: 16, fontFamily: 'Pretendard')),
-          SizedBox(width: 10),
-          Icon(Icons.arrow_drop_up_outlined, size: 18),
-          Icon(Icons.arrow_drop_down_outlined, size: 18),
-          SizedBox(width: 20),
-          // 스위치 추가
-          Switch(
-            value: true, // 상태 관리 필요
-            onChanged: (value) {
-              // 상태 변경 처리
-            },
-            activeColor: Color(0xFF0BB57F),
-            activeTrackColor: Color(0xFFE0F7F0),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStep3Content() {
     return SingleChildScrollView(
       child: Column(
@@ -410,6 +405,44 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlarmSettingItem(String title, String value) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Pretendard',
+              color: Color(0xFF0BB57F),
+            ),
+          ),
+          Spacer(),
+          Text(value, style: TextStyle(fontSize: 16, fontFamily: 'Pretendard')),
+          SizedBox(width: 10),
+          Icon(Icons.arrow_drop_up_outlined, size: 18),
+          Icon(Icons.arrow_drop_down_outlined, size: 18),
+          SizedBox(width: 20),
+          // 스위치 추가
+          Switch(
+            value: true, // 상태 관리 필요
+            onChanged: (value) {
+              // 상태 변경 처리
+            },
+            activeColor: Color(0xFF0BB57F),
+            activeTrackColor: Color(0xFFE0F7F0),
           ),
         ],
       ),
