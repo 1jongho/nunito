@@ -431,12 +431,17 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
                 ),
               ),
             ),
-            // + 아이콘 클릭 시 AddPlantScreen으로 이동
+            // + 아이콘 클릭 시 AddPlantScreen으로 이동 (수정된 부분)
             InkWell(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => AddPlantScreen()),
+                  MaterialPageRoute(
+                    builder:
+                        (context) => AddPlantScreen(
+                          scientificName: plant.cntntsSj, // 식물 이름을 학명으로 전달
+                        ),
+                  ),
                 );
               },
               child: Icon(
@@ -532,12 +537,17 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
                   ),
                 ),
               ),
-              // + 아이콘
+              // + 아이콘 (수정된 부분)
               InkWell(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => AddPlantScreen()),
+                    MaterialPageRoute(
+                      builder:
+                          (context) => AddPlantScreen(
+                            scientificName: plant.cntntsSj, // 식물 이름을 학명으로 전달
+                          ),
+                    ),
                   );
                 },
                 child: Icon(

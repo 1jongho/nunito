@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/screens/plantmyScreen.dart';
-import 'package:nunito/screens/addplantScreen.dart';
+import 'package:nunito/screens/addplantsearchScreen.dart'; // 추가
 import 'package:nunito/screens/settingScreen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -291,9 +291,10 @@ class _HomeScreenState extends State<HomeScreen> {
       offset: Offset(0, -80),
       child: ElevatedButton(
         onPressed: () {
+          // 수정된 부분: AddPlantScreen 대신 AddPlantSearchScreen으로 이동
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => AddPlantScreen()),
+            MaterialPageRoute(builder: (context) => AddPlantSearchScreen()),
           );
         },
         style: ElevatedButton.styleFrom(
