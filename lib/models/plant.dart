@@ -14,6 +14,7 @@ class Plant {
 
 class PlantDetail {
   final String cntntsNo; // 컨텐츠 번호
+  final String cntntsSj; // 식물명 (추가된 필드)
   final String plntbneNm; // 식물학 명
   final String plntzrNm; // 식물영 명
   final String fmlNm; // 과 명
@@ -35,6 +36,7 @@ class PlantDetail {
 
   PlantDetail({
     required this.cntntsNo,
+    this.cntntsSj = '', // 추가된 필드 (기본값 빈 문자열)
     required this.plntbneNm,
     required this.plntzrNm,
     required this.fmlNm,

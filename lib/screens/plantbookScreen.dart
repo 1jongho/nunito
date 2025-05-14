@@ -352,11 +352,15 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
 
     return InkWell(
       onTap: () {
-        // 식물 상세 정보 페이지로 이동
+        // 식물 상세 정보 페이지로 이동 (이미지 URL 전달)
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PlantDetailScreen(cntntsNo: plant.cntntsNo),
+            builder:
+                (context) => PlantDetailScreen(
+                  cntntsNo: plant.cntntsNo,
+                  imageUrl: imageUrl, // 수정된 부분: 이미지 URL 전달
+                ),
           ),
         );
       },
@@ -467,11 +471,15 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
       elevation: 2,
       child: InkWell(
         onTap: () {
-          // 식물 상세 정보 페이지로 이동
+          // 식물 상세 정보 페이지로 이동 (이미지 URL 전달)
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => PlantDetailScreen(cntntsNo: plant.cntntsNo),
+              builder:
+                  (context) => PlantDetailScreen(
+                    cntntsNo: plant.cntntsNo,
+                    imageUrl: imageUrl, // 수정된 부분: 이미지 URL 전달
+                  ),
             ),
           );
         },
