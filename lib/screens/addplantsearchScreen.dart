@@ -184,6 +184,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         title: Text(
           '식물 추가',
           style: TextStyle(

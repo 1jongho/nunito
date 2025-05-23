@@ -144,7 +144,6 @@ class FirebaseService {
     try {
       print('🔍 내 식물 목록 조회 시작...');
 
-      // 1. 사용자 인증 확인
       final user = _auth.currentUser;
       if (user == null) {
         print('❌ 사용자가 로그인되지 않음');
@@ -153,19 +152,18 @@ class FirebaseService {
 
       print('✅ 사용자 확인: ${user.uid}');
 
-      // 2. Firestore 쿼리 실행
-      print('🔄 Firestore 쿼리 실행 중...');
+      // orderBy 없이 쿼리 (인덱스 불필요)
+      print('🔄 Firestore 쿼리 실행 중 (orderBy 제거)...');
       QuerySnapshot snapshot =
           await _firestore
               .collection('my_plants')
               .where('userId', isEqualTo: user.uid)
-              .orderBy('createdAt', descending: true)
-              .get();
+              .get(); // orderBy 제거
 
       print('✅ 쿼리 실행 완료');
       print('📊 조회된 문서 수: ${snapshot.docs.length}');
 
-      // 3. 데이터 변환
+      // 데이터 변환 후 앱에서 정렬
       List<Map<String, dynamic>> plants = [];
       for (var doc in snapshot.docs) {
         try {
@@ -178,18 +176,33 @@ class FirebaseService {
         }
       }
 
+      // 앱에서 수동 정렬 (createdAt 기준 내림차순)
+      plants.sort((a, b) {
+        try {
+          Timestamp? aTime = a['createdAt'] as Timestamp?;
+          Timestamp? bTime = b['createdAt'] as Timestamp?;
+
+          if (aTime == null && bTime == null) return 0;
+          if (aTime == null) return 1;
+          if (bTime == null) return -1;
+
+          return bTime.compareTo(aTime); // 내림차순
+        } catch (e) {
+          print('정렬 중 오류: $e');
+          return 0;
+        }
+      });
+
       print('✅ 최종 반환 데이터 수: ${plants.length}');
       return plants;
     } catch (e) {
       print('❌ 식물 목록 조회 중 오류 발생: $e');
       print('오류 스택: ${StackTrace.current}');
 
-      // 구체적인 오류 정보
       if (e is FirebaseException) {
         print('Firebase 오류 코드: ${e.code}');
         print('Firebase 오류 메시지: ${e.message}');
 
-        // 일반적인 오류별 가이드
         switch (e.code) {
           case 'permission-denied':
             throw Exception('데이터 접근 권한이 없습니다. Firebase 보안 규칙을 확인해주세요.');
@@ -197,6 +210,8 @@ class FirebaseService {
             throw Exception('Firebase 서버에 연결할 수 없습니다. 인터넷 연결을 확인해주세요.');
           case 'unauthenticated':
             throw Exception('인증이 필요합니다. 앱을 재시작해주세요.');
+          case 'failed-precondition':
+            throw Exception('데이터베이스 인덱스를 생성 중입니다. 잠시 후 다시 시도해주세요.');
           default:
             throw Exception('데이터를 불러오는 중 오류가 발생했습니다: ${e.message}');
         }
@@ -211,7 +226,6 @@ class FirebaseService {
     try {
       print('🔍 실시간 스트림 생성 시작...');
 
-      // 사용자 인증 확인
       final user = _auth.currentUser;
       if (user == null) {
         print('❌ 스트림 생성 실패: 사용자가 로그인되지 않음');
@@ -223,16 +237,35 @@ class FirebaseService {
       yield* _firestore
           .collection('my_plants')
           .where('userId', isEqualTo: user.uid)
-          .orderBy('createdAt', descending: true)
+          // .orderBy('createdAt', descending: true) // 임시로 제거
           .snapshots()
           .map((snapshot) {
             print('📊 스트림 업데이트: ${snapshot.docs.length}개 문서');
 
-            return snapshot.docs.map((doc) {
-              Map<String, dynamic> data = doc.data();
-              data['id'] = doc.id;
-              return data;
-            }).toList();
+            List<Map<String, dynamic>> plants =
+                snapshot.docs.map((doc) {
+                  Map<String, dynamic> data = doc.data();
+                  data['id'] = doc.id;
+                  return data;
+                }).toList();
+
+            // 앱에서 수동 정렬
+            plants.sort((a, b) {
+              try {
+                Timestamp? aTime = a['createdAt'] as Timestamp?;
+                Timestamp? bTime = b['createdAt'] as Timestamp?;
+
+                if (aTime == null && bTime == null) return 0;
+                if (aTime == null) return 1;
+                if (bTime == null) return -1;
+
+                return bTime.compareTo(aTime); // 내림차순
+              } catch (e) {
+                return 0;
+              }
+            });
+
+            return plants;
           })
           .handleError((error) {
             print('❌ 스트림 오류: $error');
