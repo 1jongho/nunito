@@ -328,7 +328,12 @@ class FirebaseService {
     return diagnostics;
   }
 
-  // ========== 기존 메서드들 (디버깅 강화) ==========
+  static DateTime _getNextSunday() {
+    DateTime now = DateTime.now();
+    int daysUntilSunday = (7 - now.weekday) % 7;
+    if (daysUntilSunday == 0) daysUntilSunday = 7; // 오늘이 일요일이면 다음 주
+    return DateTime(now.year, now.month, now.day + daysUntilSunday);
+  }
 
   static Future<String> addMyPlant({
     required String nickname,
@@ -357,6 +362,11 @@ class FirebaseService {
         'alarmSettings': alarmSettings ?? {},
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+
+        // 조회 통계 관련 필드 추가
+        'viewCount': 0, // 이번 주 조회수
+        'lastViewedAt': null, // 마지막 조회 시간
+        'weeklyResetDate': Timestamp.fromDate(_getNextSunday()), // 다음 일요일
       });
 
       print('✅ 식물 추가 성공: ${docRef.id}');
@@ -421,6 +431,42 @@ class FirebaseService {
     } catch (e) {
       print('❌ 이미지 삭제 실패: $e');
       throw Exception('이미지 삭제에 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  // Firebase 서비스에 추가
+  static Future<void> checkAndResetAllPlants() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      QuerySnapshot snapshot =
+          await _firestore
+              .collection('my_plants')
+              .where('userId', isEqualTo: user.uid)
+              .get();
+
+      WriteBatch batch = _firestore.batch();
+      DateTime now = DateTime.now();
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        Timestamp? resetTimestamp = data['weeklyResetDate'] as Timestamp?;
+
+        if (resetTimestamp != null && now.isAfter(resetTimestamp.toDate())) {
+          // 리셋이 필요한 식물
+          batch.update(doc.reference, {
+            'viewCount': 0,
+            'weeklyResetDate': Timestamp.fromDate(_getNextSunday()),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      await batch.commit();
+      print('✅ 만료된 식물들의 조회수 리셋 완료');
+    } catch (e) {
+      print('❌ 일괄 리셋 실패: $e');
     }
   }
 }
