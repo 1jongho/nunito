@@ -75,20 +75,7 @@ class PlantApiService {
       String autumnWaterCycle = _getElementText(item, 'watercycleAutumnCodeNm');
       String winterWaterCycle = _getElementText(item, 'watercycleWinterCodeNm');
 
-      // 디버깅: 계절별 물주기 정보 출력
-      print('=== 계절별 물주기 정보 ===');
-      print('봄: "$sprngWaterCycle"');
-      print('여름: "$summerWaterCycle"');
-      print('가을: "$autumnWaterCycle"');
-      print('겨울: "$winterWaterCycle"');
-      print('=======================');
-      // ==========================================
-
       String cntntsSj = _getElementText(item, 'cntntsSj');
-      print('=== cntntsSj 확인 ===');
-      print('cntntsSj 값: "$cntntsSj"');
-      print('cntntsSj 길이: ${cntntsSj.length}');
-      print('==================');
 
       return PlantDetail(
         cntntsNo: _getElementText(item, 'cntntsNo'),
