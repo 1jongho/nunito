@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/widgets/navbar.dart';
-import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlantMyScreen extends StatefulWidget {
@@ -28,6 +27,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         title: Text(
           '내 식물',
           style: TextStyle(
