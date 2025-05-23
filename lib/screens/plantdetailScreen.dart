@@ -3,6 +3,8 @@ import 'package:nunito/services/plant_api_service.dart';
 import 'package:nunito/models/plant.dart';
 import 'package:nunito/screens/addplantScreen.dart';
 
+bool _isSeasonGuideExpanded = false;
+
 class PlantDetailScreen extends StatefulWidget {
   final String cntntsNo; // 식물 컨텐츠 번호
   final String? imageUrl; // 이미지 URL
@@ -19,10 +21,10 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   PlantDetail? _plantDetail;
 
   // 계절 가이드 토글 상태
-  bool _isSpringExpanded = false;
-  bool _isSummerExpanded = false;
-  bool _isAutumnExpanded = false;
-  bool _isWinterExpanded = false;
+  final bool _isSpringExpanded = false;
+  final bool _isSummerExpanded = false;
+  final bool _isAutumnExpanded = false;
+  final bool _isWinterExpanded = false;
 
   @override
   void initState() {
@@ -112,12 +114,13 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center, // center로 변경
               children: [
                 Container(
-                  width: 4,
-                  height: 60,
+                  width: 5,
+                  height: 32, // 원하는 높이로 조절
                   color: Color(0xFF0BB57F),
-                  margin: EdgeInsets.only(right: 12),
+                  margin: EdgeInsets.only(right: 7),
                 ),
                 Expanded(
                   child: Column(
@@ -132,13 +135,16 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                         ),
                       ),
                       SizedBox(height: 4),
-                      Text(
-                        _plantDetail?.plntbneNm ?? '',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey[600],
-                          fontFamily: 'Pretendard',
+                      Transform.translate(
+                        offset: Offset(0, -18),
+                        child: Text(
+                          _plantDetail?.plntbneNm ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFF363636),
+                            fontFamily: 'Pretendard',
+                          ),
                         ),
                       ),
                     ],
@@ -147,7 +153,6 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               ],
             ),
           ),
-
           SizedBox(height: 24),
 
           // 식물 정보
@@ -165,121 +170,70 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
 
           SizedBox(height: 16),
 
-          // 성장 정보 (높이/넓이)
+          // 4개의 정보 박스 (2x2 그리드)
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
+            child: Column(
               children: [
-                // 성장 높이
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '성장 높이',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontFamily: 'Pretendard',
-                          ),
+                // 첫 번째 행: 성장 높이, 성장 넓이
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoBox(
+                        title: '성장 높이',
+                        value: _getNumericValue(
+                          _plantDetail?.growthHgInfo ?? '',
                         ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _getNumericValue(
-                                _plantDetail?.growthHgInfo ?? '',
-                              ),
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0BB57F),
-                                fontFamily: 'Pretendard',
-                              ),
-                            ),
-                            Icon(Icons.arrow_upward, color: Colors.grey[600]),
-                          ],
-                        ),
-                      ],
+                        unit: 'cm',
+                        icon: Icons.height,
+                        color: Color(0xFF0BB57F),
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildInfoBox(
+                        title: '성장 넓이',
+                        value: _getNumericValue(
+                          _plantDetail?.growthAraInfo ?? '',
+                        ),
+                        unit: 'cm',
+                        icon: Icons.height,
+                        color: Color(0xFF0BB57F),
+                        rotateIcon: true,
+                      ),
+                    ),
+                  ],
                 ),
 
-                SizedBox(width: 12),
+                SizedBox(height: 12),
 
-                // 성장 넓이
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Color(0xFFF5F5F5),
-                      borderRadius: BorderRadius.circular(10),
+                // 두 번째 행: 관리 수준, 관리 요구도
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoBox(
+                        title: '관리 수준',
+                        value: _getCareLevelText(_plantDetail?.adviseInfo),
+                        unit: '',
+                        icon: Icons.star,
+                        color: Color(0xFF0BB57F),
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '성장 넓이',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            fontFamily: 'Pretendard',
-                          ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: _buildInfoBox(
+                        title: '관리 요구도',
+                        value: _getLightLevelText(
+                          _plantDetail?.lighttdemanddoCodeNm,
                         ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              _getNumericValue(
-                                _plantDetail?.growthAraInfo ?? '',
-                              ),
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0BB57F),
-                                fontFamily: 'Pretendard',
-                              ),
-                            ),
-                            Icon(Icons.swap_horiz, color: Colors.grey[600]),
-                          ],
-                        ),
-                      ],
+                        unit: '',
+                        icon: Icons.check,
+                        color: Color(0xFF0BB57F),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
-            ),
-          ),
-
-          SizedBox(height: 16),
-
-          // 관리 수준
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: _buildCareLevel(
-              '관리 수준',
-              _getCareLevel(_plantDetail?.adviseInfo),
-              _getCareLevelText(_plantDetail?.adviseInfo),
-            ),
-          ),
-
-          SizedBox(height: 16),
-
-          // 관리 요구도
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: _buildCareLevel(
-              '관리 요구도',
-              _getLightLevel(_plantDetail?.lighttdemanddoCodeNm),
-              _getLightLevelText(_plantDetail?.lighttdemanddoCodeNm),
             ),
           ),
 
@@ -299,14 +253,12 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                     fontFamily: 'Pretendard',
                   ),
                 ),
-
                 SizedBox(height: 12),
-
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,74 +289,77 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '사계절 가이드 라인',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Pretendard',
+                // 위쪽 얇은 선
+                Container(
+                  width: double.infinity,
+                  height: 1,
+                  color: Color(0xFFDFDFDF),
+                  margin: EdgeInsets.only(bottom: 16),
+                ),
+
+                // 사계절 가이드 라인 토글 헤더 (박스 제거, 화살표 위치 변경)
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isSeasonGuideExpanded = !_isSeasonGuideExpanded;
+                    });
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        Text(
+                          '사계절 가이드 라인',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Pretendard',
+                          ),
+                        ),
+                        SizedBox(width: 8), // 글자와 화살표 사이 간격
+                        Icon(
+                          _isSeasonGuideExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          color: Color(0xFF363636),
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
-                SizedBox(height: 12),
+                // 사계절 내용 (토글 상태에 따라 표시)
+                if (_isSeasonGuideExpanded) ...[
+                  SizedBox(height: 12),
 
-                // 봄
-                _buildSeasonToggle(
-                  '봄',
-                  _isSpringExpanded,
-                  _getSeasonGuide(_plantDetail, 'spring'),
-                  Color(0xFF8BC34A),
-                  () {
-                    setState(() {
-                      _isSpringExpanded = !_isSpringExpanded;
-                    });
-                  },
-                ),
+                  _buildSeasonItem(
+                    '봄',
+                    _getSeasonGuide(_plantDetail, 'spring'),
+                    Color(0xFFfecbc4),
+                  ),
+                  SizedBox(height: 8),
 
-                SizedBox(height: 8),
+                  _buildSeasonItem(
+                    '여름',
+                    _getSeasonGuide(_plantDetail, 'summer'),
+                    Color(0xFF00ffff),
+                  ),
+                  SizedBox(height: 8),
 
-                // 여름
-                _buildSeasonToggle(
-                  '여름',
-                  _isSummerExpanded,
-                  _getSeasonGuide(_plantDetail, 'summer'),
-                  Color(0xFFFF9800),
-                  () {
-                    setState(() {
-                      _isSummerExpanded = !_isSummerExpanded;
-                    });
-                  },
-                ),
+                  _buildSeasonItem(
+                    '가을',
+                    _getSeasonGuide(_plantDetail, 'fall'),
+                    Color(0xFF73682c), // 0xFFE4943A, 0xFFE4943A, 0xFF73682c
+                  ),
+                  SizedBox(height: 8),
 
-                SizedBox(height: 8),
-
-                // 가을
-                _buildSeasonToggle(
-                  '가을',
-                  _isAutumnExpanded,
-                  _getSeasonGuide(_plantDetail, 'fall'),
-                  Color(0xFFFF5722),
-                  () {
-                    setState(() {
-                      _isAutumnExpanded = !_isAutumnExpanded;
-                    });
-                  },
-                ),
-
-                SizedBox(height: 8),
-
-                // 겨울
-                _buildSeasonToggle(
-                  '겨울',
-                  _isWinterExpanded,
-                  _getSeasonGuide(_plantDetail, 'winter'),
-                  Color(0xFF2196F3),
-                  () {
-                    setState(() {
-                      _isWinterExpanded = !_isWinterExpanded;
-                    });
-                  },
-                ),
+                  _buildSeasonItem(
+                    '겨울',
+                    _getSeasonGuide(_plantDetail, 'winter'),
+                    Color(0xFFC1DDF2),
+                  ),
+                ],
               ],
             ),
           ),
@@ -430,9 +385,9 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF0BB57F),
                 foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 50),
+                minimumSize: Size(double.infinity, 65),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
               child: Text(
@@ -445,6 +400,87 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBox({
+    required String title,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+    bool rotateIcon = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          // 제목
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF363636),
+              fontFamily: 'Pretendard',
+            ),
+            textAlign: TextAlign.center,
+          ),
+
+          SizedBox(height: 8),
+
+          // 값과 단위
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontFamily: 'Pretendard',
+                ),
+              ),
+              SizedBox(width: 2),
+              Text(
+                unit,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF363636),
+                  fontFamily: 'Pretendard',
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: 8),
+
+          // 아이콘 표시 (모든 박스에 동일하게 적용)
+          rotateIcon
+              ? Transform.rotate(
+                angle: 1.5708,
+                child: Icon(
+                  icon,
+                  color: Color(0xFF363636),
+                  size: 30,
+                  weight: 700,
+                ),
+              )
+              : Icon(
+                icon,
+                color:
+                    icon == Icons.star ? Color(0xFFFDB022) : Color(0xFF363636),
+                size: 30,
+                weight: icon == Icons.star ? null : 700,
+              ),
         ],
       ),
     );
@@ -463,7 +499,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
     return Container(
       height: 240,
       width: double.infinity,
-      color: Colors.grey[200], // 배경색 추가
+      color: Color(0xFFF2F2F2), // 배경색 추가
       child:
           imageUrl.isNotEmpty
               ? Image.network(
@@ -491,13 +527,13 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                         Icon(
                           Icons.image_not_supported,
                           size: 48,
-                          color: Colors.grey,
+                          color: Color(0xFF363636),
                         ),
                         SizedBox(height: 8),
                         Text(
                           '이미지를 불러올 수 없습니다',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Color(0xFF363636),
                             fontFamily: 'Pretendard',
                           ),
                         ),
@@ -515,7 +551,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                     Text(
                       '이미지가 없습니다',
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Color(0xFFF2F2F2),
                         fontFamily: 'Pretendard',
                       ),
                     ),
@@ -525,137 +561,58 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
     );
   }
 
-  // 관리 수준 위젯
-  Widget _buildCareLevel(String title, int level, String levelText) {
+  // 계절별 가이드 토글 위젯
+  Widget _buildSeasonItem(String season, String guideText, Color seasonColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontFamily: 'Pretendard',
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: seasonColor,
               ),
             ),
+            SizedBox(width: 8),
             Text(
-              levelText,
+              season,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF0BB57F),
                 fontFamily: 'Pretendard',
               ),
             ),
           ],
         ),
+
         SizedBox(height: 8),
-        Row(
-          children: List.generate(5, (index) {
-            return Expanded(
-              child: Container(
-                height: 8,
-                margin: EdgeInsets.only(right: index < 4 ? 4 : 0),
-                decoration: BoxDecoration(
-                  color: index < level ? Color(0xFF0BB57F) : Color(0xFFE0E0E0),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            );
-          }),
+
+        // 가이드 내용 박스
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Color(0xFFF2F2F2)),
+          ),
+          child: Text(
+            guideText,
+            style: TextStyle(
+              fontSize: 14,
+              color: Color(0xFF363636),
+              fontFamily: 'Pretendard',
+            ),
+          ),
         ),
       ],
     );
   }
 
-  // 계절별 가이드 토글 위젯
-  Widget _buildSeasonToggle(
-    String season,
-    bool isExpanded,
-    String guideText,
-    Color seasonColor,
-    VoidCallback onToggle,
-  ) {
-    return Column(
-      children: [
-        // 토글 헤더
-        InkWell(
-          onTap: onToggle,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: seasonColor,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      season,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Pretendard',
-                      ),
-                    ),
-                  ],
-                ),
-                Icon(
-                  isExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                  color: Colors.grey[600],
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 토글 내용
-        if (isExpanded)
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(8),
-                bottomRight: Radius.circular(8),
-              ),
-              border: Border(
-                left: BorderSide(color: Colors.grey[300]!),
-                right: BorderSide(color: Colors.grey[300]!),
-                bottom: BorderSide(color: Colors.grey[300]!),
-              ),
-            ),
-            child: Text(
-              guideText,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[800],
-                fontFamily: 'Pretendard',
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  // 숫자 값만 추출 (예: '100~150cm' -> '100')
+  // 숫자 값만 추출
   String _getNumericValue(String? text) {
     if (text == null || text.isEmpty) return '0';
 
@@ -663,20 +620,41 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
     final numericRegExp = RegExp(r'(\d+)');
     final match = numericRegExp.firstMatch(text);
 
-    return match?.group(1) ?? '0';
+    String result = match?.group(1) ?? '0';
+
+    // 값이 너무 크면 단위 변환
+    int? numValue = int.tryParse(result);
+    if (numValue != null) {
+      if (numValue >= 100) {
+        return (numValue / 100).toStringAsFixed(1).replaceAll('.0', '');
+      }
+    }
+
+    return result;
   }
 
   // 관리 수준 계산 (1~5)
   int _getCareLevel(String? text) {
     if (text == null || text.isEmpty) return 3;
 
-    if (text.contains('까다로') || text.contains('어려')) return 5;
-    if (text.contains('관리') && text.contains('필요')) return 4;
-    if (text.contains('보통') || text.contains('적절')) return 3;
-    if (text.contains('쉽') || text.contains('용이')) return 2;
-    if (text.contains('매우 쉽') || text.contains('간단')) return 1;
+    String lowerText = text.toLowerCase();
 
-    return 3;
+    if (lowerText.contains('매우 어려') || lowerText.contains('전문가')) return 5;
+    if (lowerText.contains('어려') ||
+        lowerText.contains('까다로') ||
+        lowerText.contains('경험자'))
+      return 4;
+    if (lowerText.contains('보통') ||
+        lowerText.contains('적절') ||
+        lowerText.contains('중간'))
+      return 3;
+    if (lowerText.contains('쉬') ||
+        lowerText.contains('용이') ||
+        lowerText.contains('간단'))
+      return 2;
+    if (lowerText.contains('매우 쉬') || lowerText.contains('초보자')) return 1;
+
+    return 3; // 기본값
   }
 
   // 관리 수준 텍스트
@@ -703,13 +681,30 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   int _getLightLevel(String? text) {
     if (text == null || text.isEmpty) return 3;
 
-    if (text.contains('직사광선') || text.contains('양지')) return 5;
-    if (text.contains('밝은') || text.contains('충분한 빛')) return 4;
-    if (text.contains('반음지') || text.contains('반그늘')) return 3;
-    if (text.contains('간접광') || text.contains('적은 빛')) return 2;
-    if (text.contains('음지') || text.contains('그늘')) return 1;
+    String lowerText = text.toLowerCase();
 
-    return 3;
+    if (lowerText.contains('직사광선') ||
+        lowerText.contains('강한 빛') ||
+        lowerText.contains('양지'))
+      return 5;
+    if (lowerText.contains('밝은') ||
+        lowerText.contains('충분한 빛') ||
+        lowerText.contains('많은 빛'))
+      return 4;
+    if (lowerText.contains('반음지') ||
+        lowerText.contains('반그늘') ||
+        lowerText.contains('보통'))
+      return 3;
+    if (lowerText.contains('간접광') ||
+        lowerText.contains('적은 빛') ||
+        lowerText.contains('어두운'))
+      return 2;
+    if (lowerText.contains('음지') ||
+        lowerText.contains('그늘') ||
+        lowerText.contains('매우 어두운'))
+      return 1;
+
+    return 3; // 기본값
   }
 
   // 광 요구도 텍스트
