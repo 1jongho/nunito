@@ -356,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
         width: 180,
         height: 180,
         decoration: ShapeDecoration(
+          color: Colors.white, // 연한 배경색 추가
           shape: OvalBorder(
             side: BorderSide(width: 0.40, color: const Color(0xFFDEDEDE)),
           ),
@@ -384,18 +385,24 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       errorBuilder: (context, error, stackTrace) {
                         print('홈 화면 이미지 로드 실패: ${plant['nickname']} - $error');
-                        return SvgPicture.asset(
-                          'assets/image/default_plant_image.svg',
-                          width: 80,
-                          height: 80,
+                        return Container(
+                          padding: EdgeInsets.all(30), // SVG 주변 여백
+                          child: SvgPicture.asset(
+                            'assets/image/default_plant_image.svg',
+                            width: 80,
+                            height: 80,
+                          ),
                         );
                       },
                     ),
                   )
-                  : SvgPicture.asset(
-                    'assets/image/default_plant_image.svg',
-                    width: 80,
-                    height: 80,
+                  : Container(
+                    padding: EdgeInsets.all(30), // SVG 주변 여백
+                    child: SvgPicture.asset(
+                      'assets/image/default_plant_image.svg',
+                      width: 80,
+                      height: 80,
+                    ),
                   ),
         ),
       ),

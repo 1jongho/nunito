@@ -38,7 +38,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.light(surface: Colors.white),
-        // 개별 버튼 타입별 설정
+
+        // 전역 터치 애니메이션 효과 제거 설정
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+
+        // 개별 버튼 타입별 설정 (더 구체적인 설정)
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             splashFactory: NoSplash.splashFactory,
@@ -63,6 +68,15 @@ class MyApp extends StatelessWidget {
             overlayColor: Colors.transparent,
           ),
         ),
+
+        // InkWell과 기타 터치 가능한 위젯들에 대한 전역 설정
+        splashFactory: NoSplash.splashFactory,
+
+        // ListTile에 대한 설정
+        listTileTheme: ListTileThemeData(selectedTileColor: Colors.transparent),
+
+        // Card에 대한 설정
+        cardTheme: CardTheme(surfaceTintColor: Colors.transparent),
       ),
       home: IntroScreen(),
     );

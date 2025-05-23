@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/widgets/navbar.dart';
+import 'package:nunito/screens/homeScreen.dart'; // HomeScreen import 추가
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlantMyScreen extends StatefulWidget {
@@ -131,7 +132,13 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, size: 28),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            // HomeScreen으로 이동 (기존 스택 모두 제거)
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+              (route) => false,
+            );
+          },
         ),
       ),
       body: Column(

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:nunito/screens/plantbookScreen.dart';
+import 'package:nunito/screens/homeScreen.dart';
+import 'package:nunito/screens/plantmyScreen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/widgets/modal/alarm.dart';
 import 'package:nunito/widgets/switch.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:nunito/services/firebase_service.dart';
 
 class AddPlantScreen extends StatefulWidget {
   final String? scientificName;
@@ -26,6 +30,11 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   // 컨트롤러 추가
   late TextEditingController _scientificNameController;
   final TextEditingController _nicknameController = TextEditingController();
+
+  // 이미지 관련 변수들
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+  bool _isUploading = false;
 
   // 알림 설정 상태 변수들
   Map<String, bool> _alarmStates = {
@@ -80,6 +89,30 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     super.dispose();
   }
 
+  // 이미지 선택 함수
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+        print('✅ 이미지 선택 완료: ${image.path}');
+      }
+    } catch (e) {
+      print('❌ 이미지 선택 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('이미지 선택에 실패했습니다.'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -109,13 +142,16 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
             _currentStep == 2
                 ? [
                   TextButton(
-                    onPressed: () {
-                      _savePlant();
-                    },
+                    onPressed:
+                        _isUploading
+                            ? null
+                            : () {
+                              _savePlant(skipImage: true);
+                            },
                     child: Text(
                       '건너뛰기',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: _isUploading ? Colors.grey : Colors.blue,
                         fontFamily: 'Pretendard',
                       ),
                     ),
@@ -138,31 +174,83 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 width: double.infinity,
                 margin: EdgeInsets.symmetric(vertical: 20),
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_currentStep < 2) {
-                      setState(() {
-                        _currentStep += 1;
-                      });
-                    } else {
-                      _savePlant();
-                    }
-                  },
+                  onPressed:
+                      _isUploading
+                          ? null
+                          : () {
+                            if (_currentStep < 2) {
+                              // 1단계에서 필수 필드 검증
+                              if (_currentStep == 0) {
+                                if (_nicknameController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('애칭을 입력해주세요.'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (_scientificNameController.text
+                                    .trim()
+                                    .isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('학명을 입력해주세요.'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
+                              }
+
+                              setState(() {
+                                _currentStep += 1;
+                              });
+                            } else {
+                              _savePlant();
+                            }
+                          },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF0BB57F),
+                    backgroundColor:
+                        _isUploading ? Colors.grey : Color(0xFF0BB57F),
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    _currentStep == 2 ? '추가하기' : '다음',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Pretendard',
-                    ),
-                  ),
+                  child:
+                      _isUploading
+                          ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                '저장 중...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Pretendard',
+                                ),
+                              ),
+                            ],
+                          )
+                          : Text(
+                            _currentStep == 2 ? '추가하기' : '다음',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Pretendard',
+                            ),
+                          ),
                 ),
               ),
             ],
@@ -396,7 +484,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
         children: [
           SizedBox(height: 100),
 
-          // 식물 아이콘 또는 이미지
+          // 식물 이미지 표시 영역
           Container(
             width: 180,
             height: 180,
@@ -405,13 +493,23 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               color: Colors.white,
               border: Border.all(color: Colors.grey[300]!, width: 0.5),
             ),
-            child: Center(
-              child: SvgPicture.asset(
-                'assets/image/default_plant_image.svg',
-                width: 70,
-                height: 70,
-              ),
-            ),
+            child:
+                _selectedImage != null
+                    ? ClipOval(
+                      child: Image.file(
+                        _selectedImage!,
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                    : Center(
+                      child: SvgPicture.asset(
+                        'assets/image/default_plant_image.svg',
+                        width: 70,
+                        height: 70,
+                      ),
+                    ),
           ),
 
           SizedBox(height: 80),
@@ -425,11 +523,9 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            onPressed: () {
-              // 사진 등록 로직
-            },
+            onPressed: _pickImage,
             child: Text(
-              '사진 등록',
+              _selectedImage != null ? '사진 변경' : '사진 등록',
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: 'Pretendard',
@@ -507,7 +603,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               activeColor: Colors.white, // ON 상태 썸 색상
               inactiveColor: Colors.white, // OFF 상태 썸 색상
               activeTrackColor: Color(0xFF0BB57F), // ON 상태 트랙 색상
-              inactiveTrackColor: Color(0xFFB0B0B0)!, // OFF 상태 트랙 색상
+              inactiveTrackColor: Color(0xFFB0B0B0), // OFF 상태 트랙 색상
               width: 51, // 스위치 너비
               height: 31, // 스위치 높이
               animationDuration: Duration(milliseconds: 80), // 애니메이션 속도
@@ -518,35 +614,105 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
-  void _savePlant() {
-    // 알림 설정 정보를 plantDetails에 추가
-    plantDetails['alarmSettings'] = {
-      'moistureAlarm': {
-        'enabled': _alarmStates['수분 알림'],
-        'value': _alarmValues['수분 알림'],
-        'unit': _alarmUnits['수분 알림'],
-      },
-      'temperatureAlarm': {
-        'enabled': _alarmStates['온도 알림'],
-        'value': _alarmValues['온도 알림'],
-        'unit': _alarmUnits['온도 알림'],
-      },
-      'conductivityAlarm': {
-        'enabled': _alarmStates['전도도 알림'],
-        'value': _alarmValues['전도도 알림'],
-        'unit': _alarmUnits['전도도 알림'],
-      },
-    };
+  // 식물 저장 함수 (Firebase 연동)
+  Future<void> _savePlant({bool skipImage = false}) async {
+    try {
+      setState(() {
+        _isUploading = true;
+      });
 
-    print('저장될 식물 정보: $plantDetails'); // 디버깅용
+      print('🔍 식물 저장 시작...');
 
-    // Firebase나 다른 저장소에 데이터 저장
-    // TODO: Firebase 저장 로직 구현
+      // 필수 필드 검증
+      if (_nicknameController.text.trim().isEmpty) {
+        throw Exception('애칭을 입력해주세요.');
+      }
+      if (_scientificNameController.text.trim().isEmpty) {
+        throw Exception('학명을 입력해주세요.');
+      }
 
-    // 저장 완료 후 식물도감 화면으로 이동
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => PlantBookScreen()),
-      (route) => false,
-    );
+      String? imageUrl;
+
+      // 이미지 업로드 처리
+      if (!skipImage && _selectedImage != null) {
+        print('📸 이미지 업로드 중...');
+
+        // 파일명 생성 (현재 시간 + 애칭)
+        String fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${_nicknameController.text.trim()}.jpg';
+
+        // Firebase Storage에 이미지 업로드
+        imageUrl = await FirebaseService.uploadImage(_selectedImage!, fileName);
+        print('✅ 이미지 업로드 완료: $imageUrl');
+      }
+
+      // 알림 설정 정보 구성
+      Map<String, dynamic> alarmSettings = {
+        'moistureAlarm': {
+          'enabled': _alarmStates['수분 알림'],
+          'value': _alarmValues['수분 알림'],
+          'unit': _alarmUnits['수분 알림'],
+        },
+        'temperatureAlarm': {
+          'enabled': _alarmStates['온도 알림'],
+          'value': _alarmValues['온도 알림'],
+          'unit': _alarmUnits['온도 알림'],
+        },
+        'conductivityAlarm': {
+          'enabled': _alarmStates['전도도 알림'],
+          'value': _alarmValues['전도도 알림'],
+          'unit': _alarmUnits['전도도 알림'],
+        },
+      };
+
+      print('💾 Firestore에 식물 정보 저장 중...');
+
+      // Firebase Firestore에 식물 정보 저장
+      String plantId = await FirebaseService.addMyPlant(
+        nickname: _nicknameController.text.trim(),
+        scientificName: _scientificNameController.text.trim(),
+        startDate: selectedDate,
+        imageUrl: imageUrl, // 이미지 URL (없으면 null)
+        alarmSettings: alarmSettings,
+      );
+
+      print('✅ 식물 저장 완료: $plantId');
+
+      // 성공 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${_nicknameController.text.trim()}이(가) 추가되었습니다!',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Color(0xFF0BB57F),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // 내 식물 페이지로 이동 (기존 스택 모두 제거)
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => PlantMyScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      print('❌ 식물 저장 실패: $e');
+
+      // 오류 메시지 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '저장 중 오류가 발생했습니다: ${e.toString()}',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isUploading = false;
+      });
+    }
   }
 }
