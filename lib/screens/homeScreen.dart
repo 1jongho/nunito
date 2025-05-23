@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nunito/screens/testScreen.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/screens/plantmyScreen.dart';
 import 'package:nunito/screens/addplantsearchScreen.dart'; // 추가
@@ -72,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => SettingScreen()),
+                  //MaterialPageRoute(builder: (context) => SettingScreen()),
+                  MaterialPageRoute(builder: (context) => FirebaseTestScreen()),
                 );
               },
             ),

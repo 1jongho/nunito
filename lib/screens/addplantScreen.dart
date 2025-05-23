@@ -56,11 +56,15 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       appBar: AppBar(
         title: Text(
           '${_currentStep + 1}/3 단계',
-          style: TextStyle(fontSize: 16, fontFamily: 'Pretendard'),
+          style: TextStyle(
+            fontSize: 18,
+            fontFamily: 'Pretendard',
+            fontWeight: FontWeight.w600,
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back_rounded, size: 28),
           onPressed: () {
             if (_currentStep > 0) {
               setState(() {
