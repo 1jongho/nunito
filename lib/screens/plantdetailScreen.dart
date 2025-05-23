@@ -8,8 +8,14 @@ bool _isSeasonGuideExpanded = false;
 class PlantDetailScreen extends StatefulWidget {
   final String cntntsNo; // 식물 컨텐츠 번호
   final String? imageUrl; // 이미지 URL
+  final String? plantName; // 도감에서 전달받은 한국어 식물명 추가
 
-  const PlantDetailScreen({super.key, required this.cntntsNo, this.imageUrl});
+  const PlantDetailScreen({
+    super.key,
+    required this.cntntsNo,
+    this.imageUrl,
+    this.plantName, // 새로 추가
+  });
 
   @override
   State<PlantDetailScreen> createState() => _PlantDetailScreenState();
@@ -110,15 +116,17 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
           // 식물 이미지
           _buildPlantImage(),
 
+          SizedBox(height: 10),
+
           // 식물 이름 및 학명
           Container(
             padding: EdgeInsets.symmetric(horizontal: 20),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center, // center로 변경
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: 5,
-                  height: 32, // 원하는 높이로 조절
+                  height: 32,
                   color: Color(0xFF0BB57F),
                   margin: EdgeInsets.only(right: 7),
                 ),
@@ -126,25 +134,13 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 도감에서 전달받은 한국어 식물명 표시
                       Text(
-                        _plantDetail?.cntntsSj ?? '',
+                        widget.plantName ?? '식물명 없음',
                         style: TextStyle(
                           fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w500,
                           fontFamily: 'Pretendard',
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Transform.translate(
-                        offset: Offset(0, -18),
-                        child: Text(
-                          _plantDetail?.plntbneNm ?? '',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontStyle: FontStyle.italic,
-                            color: Color(0xFF363636),
-                            fontFamily: 'Pretendard',
-                          ),
                         ),
                       ),
                     ],
@@ -729,7 +725,56 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
 
   // 계절별 관리 정보 추출
   String _getSeasonGuide(PlantDetail? plantDetail, String season) {
-    // 기본 계절별 정보 (API 데이터가 없는 경우 기본값)
+    Map<String, String> defaultGuides = {};
+
+    if (plantDetail == null) {
+      return defaultGuides[season] ?? '정보가 없습니다.';
+    }
+
+    // ========== API에서 계절별 물주기 정보 가져오기 ==========
+    String seasonGuide = '';
+
+    switch (season) {
+      case 'spring':
+        seasonGuide = plantDetail.watercycleSprngCodeNm;
+        break;
+      case 'summer':
+        seasonGuide = plantDetail.watercycleSummerCodeNm;
+        break;
+      case 'fall':
+        seasonGuide = plantDetail.watercycleAutumnCodeNm;
+        break;
+      case 'winter':
+        seasonGuide = plantDetail.watercycleWinterCodeNm;
+        break;
+    }
+
+    // API 데이터가 있으면 그것을 사용, 없으면 기본값 사용
+    if (seasonGuide.isNotEmpty) {
+      print('✅ $season 가이드 API 데이터 사용: "$seasonGuide"');
+      return seasonGuide;
+    } else {
+      print('⚠️ $season 가이드 API 데이터 없음, 기본값 사용');
+      return defaultGuides[season] ?? '정보가 없습니다.';
+    }
+  }
+
+  String _convertWaterCycleCodeToText(String code) {
+    switch (code) {
+      case '053001':
+        return '4';
+      case '053002':
+        return '3';
+      case '053003':
+        return '2';
+      case '053004':
+        return '1';
+      default:
+        return code; // 코드명이 이미 텍스트인 경우 그대로 반환
+    }
+  }
+
+  String _getSeasonGuideImproved(PlantDetail? plantDetail, String season) {
     Map<String, String> defaultGuides = {
       'spring': '토양 표면이 말랐을 때 충분히 관수',
       'summer': '토양 표면이 말랐을 때 충분히 관수',
@@ -741,35 +786,31 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
       return defaultGuides[season] ?? '정보가 없습니다.';
     }
 
-    // 겨울철 물주기 정보가 있으면 겨울 가이드에 추가
-    if (season == 'winter' && plantDetail.waterCycleInfo.isNotEmpty) {
-      return plantDetail.waterCycleInfo;
+    String seasonGuide = '';
+
+    switch (season) {
+      case 'spring':
+        seasonGuide = plantDetail.watercycleSprngCodeNm;
+        break;
+      case 'summer':
+        seasonGuide = plantDetail.watercycleSummerCodeNm;
+        break;
+      case 'fall':
+        seasonGuide = plantDetail.watercycleAutumnCodeNm;
+        break;
+      case 'winter':
+        seasonGuide = plantDetail.watercycleWinterCodeNm;
+        break;
     }
 
-    // 봄철 물주기 정보가 있으면 봄 가이드에 추가
-    if (season == 'spring' && plantDetail.watercycleSprngCodeNm.isNotEmpty) {
-      return plantDetail.watercycleSprngCodeNm;
+    if (seasonGuide.isNotEmpty) {
+      // 코드인지 텍스트인지 확인하고 적절히 변환
+      String friendlyText = _convertWaterCycleCodeToText(seasonGuide);
+      print('✅ $season 가이드 API 데이터 사용: "$friendlyText"');
+      return friendlyText;
+    } else {
+      print('⚠️ $season 가이드 API 데이터 없음, 기본값 사용');
+      return defaultGuides[season] ?? '정보가 없습니다.';
     }
-
-    // API 데이터에서 조언 정보가 있으면 활용
-    if (plantDetail.adviseInfo.isNotEmpty) {
-      // 계절 관련 키워드 검색
-      if (season == 'spring' && plantDetail.adviseInfo.contains('봄')) {
-        // 봄 관련 문장 추출 로직
-        return defaultGuides[season] ?? '정보가 없습니다.';
-      } else if (season == 'summer' && plantDetail.adviseInfo.contains('여름')) {
-        // 여름 관련 문장 추출 로직
-        return defaultGuides[season] ?? '정보가 없습니다.';
-      } else if (season == 'fall' && plantDetail.adviseInfo.contains('가을')) {
-        // 가을 관련 문장 추출 로직
-        return defaultGuides[season] ?? '정보가 없습니다.';
-      } else if (season == 'winter' && plantDetail.adviseInfo.contains('겨울')) {
-        // 겨울 관련 문장 추출 로직
-        return defaultGuides[season] ?? '정보가 없습니다.';
-      }
-    }
-
-    // 계절별 정보가 없으면 기본값 반환
-    return defaultGuides[season] ?? '정보가 없습니다.';
   }
 }

@@ -61,11 +61,39 @@ class PlantApiService {
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
+      // 디버깅: API 응답 출력
+      print('=== gardenDtl API 응답 ===');
+      print('응답 데이터: ${response.body}');
+      print('========================');
+
       final document = xml.XmlDocument.parse(response.body);
       final item = document.findAllElements('item').first;
 
+      // ========== 계절별 물주기 정보 파싱 ==========
+      String sprngWaterCycle = _getElementText(item, 'watercycleSprngCodeNm');
+      String summerWaterCycle = _getElementText(item, 'watercycleSummerCodeNm');
+      String autumnWaterCycle = _getElementText(item, 'watercycleAutumnCodeNm');
+      String winterWaterCycle = _getElementText(item, 'watercycleWinterCodeNm');
+
+      // 디버깅: 계절별 물주기 정보 출력
+      print('=== 계절별 물주기 정보 ===');
+      print('봄: "$sprngWaterCycle"');
+      print('여름: "$summerWaterCycle"');
+      print('가을: "$autumnWaterCycle"');
+      print('겨울: "$winterWaterCycle"');
+      print('=======================');
+      // ==========================================
+
+      String cntntsSj = _getElementText(item, 'cntntsSj');
+      print('=== cntntsSj 확인 ===');
+      print('cntntsSj 값: "$cntntsSj"');
+      print('cntntsSj 길이: ${cntntsSj.length}');
+      print('==================');
+
       return PlantDetail(
         cntntsNo: _getElementText(item, 'cntntsNo'),
+        cntntsSj: cntntsSj,
+        distbNm: _getElementText(item, 'distbNm'),
         plntbneNm: _getElementText(item, 'plntbneNm'),
         plntzrNm: _getElementText(item, 'plntzrNm'),
         fmlNm: _getElementText(item, 'fmlNm'),
@@ -83,7 +111,13 @@ class PlantApiService {
         dlthtsManageInfo: _getElementText(item, 'dlthtsManageInfo'),
         speclmanageInfo: _getElementText(item, 'speclmanageInfo'),
         fncltyInfo: _getElementText(item, 'fncltyInfo'),
-        watercycleSprngCodeNm: _getElementText(item, 'watercycleSprngCodeNm'),
+        watercycleSprngCodeNm: sprngWaterCycle,
+
+        // ========== 계절별 물주기 필드 추가 ==========
+        watercycleSummerCodeNm: summerWaterCycle,
+        watercycleAutumnCodeNm: autumnWaterCycle,
+        watercycleWinterCodeNm: winterWaterCycle,
+        // =========================================
       );
     } else {
       throw Exception('Failed to load plant detail');

@@ -226,7 +226,8 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
             builder:
                 (context) => PlantDetailScreen(
                   cntntsNo: plant.cntntsNo,
-                  imageUrl: imageUrl, // 최적화된 이미지 URL 전달
+                  imageUrl: imageUrl,
+                  plantName: plant.cntntsSj, // 도감의 한국어 식물명 전달
                 ),
           ),
         );
@@ -347,7 +348,8 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
               builder:
                   (context) => PlantDetailScreen(
                     cntntsNo: plant.cntntsNo,
-                    imageUrl: imageUrl, // 최적화된 이미지 URL 전달
+                    imageUrl: imageUrl,
+                    plantName: plant.cntntsSj, // 도감의 한국어 식물명 전달
                   ),
             ),
           );

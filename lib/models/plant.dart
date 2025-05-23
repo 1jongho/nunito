@@ -17,6 +17,7 @@ class PlantDetail {
   final String cntntsSj; // 식물명 (추가된 필드)
   final String plntbneNm; // 식물학 명
   final String plntzrNm; // 식물영 명
+  final String distbNm;
   final String fmlNm; // 과 명
   final String fmlCodeNm; // 과 코드명
   final String orgplceInfo; // 원산지 정보
@@ -33,12 +34,16 @@ class PlantDetail {
   final String speclmanageInfo; // 특별관리 정보
   final String fncltyInfo; // 기능성 정보
   final String watercycleSprngCodeNm; // 물주기 봄 코드명
+  final String watercycleSummerCodeNm; // 물주기 여름 코드명
+  final String watercycleAutumnCodeNm; // 물주기 가을 코드명
+  final String watercycleWinterCodeNm; // 물주기 겨울 코드명
 
   PlantDetail({
     required this.cntntsNo,
     this.cntntsSj = '', // 추가된 필드 (기본값 빈 문자열)
     required this.plntbneNm,
     required this.plntzrNm,
+    this.distbNm = '',
     required this.fmlNm,
     required this.fmlCodeNm,
     required this.orgplceInfo,
@@ -55,5 +60,8 @@ class PlantDetail {
     required this.speclmanageInfo,
     required this.fncltyInfo,
     required this.watercycleSprngCodeNm,
+    this.watercycleSummerCodeNm = '',
+    this.watercycleAutumnCodeNm = '',
+    this.watercycleWinterCodeNm = '',
   });
 }

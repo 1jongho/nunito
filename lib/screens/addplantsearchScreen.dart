@@ -471,6 +471,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
                         (context) => PlantDetailScreen(
                           cntntsNo: plant.cntntsNo,
                           imageUrl: imageUrl,
+                          plantName: plant.cntntsSj, // 이 부분이 빠져있었음!
                         ),
                   ),
                 );
@@ -544,6 +545,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
                           (context) => PlantDetailScreen(
                             cntntsNo: plant.cntntsNo,
                             imageUrl: imageUrl,
+                            plantName: plant.cntntsSj, // 검색에서 보던 한국어 식물명 전달
                           ),
                     ),
                   );
@@ -606,6 +608,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
                     (context) => PlantDetailScreen(
                       cntntsNo: plant.cntntsNo,
                       imageUrl: imageUrl,
+                      plantName: plant.cntntsSj, // 검색에서 보던 한국어 식물명 전달
                     ),
               ),
             );
