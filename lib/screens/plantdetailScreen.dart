@@ -181,7 +181,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                           _plantDetail?.growthHgInfo ?? '',
                         ),
                         unit: 'cm',
-                        icon: Icons.height,
+                        icon: Icons.height_rounded,
                         color: Color(0xFF0BB57F),
                       ),
                     ),
@@ -193,7 +193,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                           _plantDetail?.growthAraInfo ?? '',
                         ),
                         unit: 'cm',
-                        icon: Icons.height,
+                        icon: Icons.height_rounded,
                         color: Color(0xFF0BB57F),
                         rotateIcon: true,
                       ),
@@ -211,7 +211,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                         title: '관리 수준',
                         value: _getCareLevelText(_plantDetail?.adviseInfo),
                         unit: '',
-                        icon: Icons.star,
+                        icon: Icons.star_rounded,
                         color: Color(0xFF0BB57F),
                       ),
                     ),
@@ -223,7 +223,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                           _plantDetail?.lighttdemanddoCodeNm,
                         ),
                         unit: '',
-                        icon: Icons.check,
+                        icon: Icons.check_rounded,
                         color: Color(0xFF0BB57F),
                       ),
                     ),
@@ -259,7 +259,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.eco, color: Color(0xFF0BB57F)),
+                      Icon(Icons.eco_rounded, color: Color(0xFF0BB57F)),
                       SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -315,8 +315,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                         SizedBox(width: 8), // 글자와 화살표 사이 간격
                         Icon(
                           _isSeasonGuideExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
                           color: Color(0xFF363636),
                           size: 20,
                         ),
@@ -332,21 +332,21 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
                   _buildSeasonItem(
                     '봄',
                     _getSeasonGuide(_plantDetail, 'spring'),
-                    Color(0xFFfecbc4),
+                    Color(0xFF79CE5E),
                   ),
                   SizedBox(height: 8),
 
                   _buildSeasonItem(
                     '여름',
                     _getSeasonGuide(_plantDetail, 'summer'),
-                    Color(0xFF00ffff),
+                    Color(0xFF5AE0D8),
                   ),
                   SizedBox(height: 8),
 
                   _buildSeasonItem(
                     '가을',
                     _getSeasonGuide(_plantDetail, 'fall'),
-                    Color(0xFF73682c), // 0xFFE4943A, 0xFFE4943A, 0xFF73682c
+                    Color(0xFFD39666),
                   ),
                   SizedBox(height: 8),
 
@@ -473,9 +473,11 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               : Icon(
                 icon,
                 color:
-                    icon == Icons.star ? Color(0xFFFDB022) : Color(0xFF363636),
+                    icon == Icons.star_rounded
+                        ? Color(0xFFFDB022)
+                        : Color(0xFF363636),
                 size: 30,
-                weight: icon == Icons.star ? null : 700,
+                weight: icon == Icons.star_rounded ? null : 700,
               ),
         ],
       ),
@@ -565,8 +567,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
         Row(
           children: [
             Container(
-              width: 16,
-              height: 16,
+              width: 12,
+              height: 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: seasonColor,
@@ -577,8 +579,9 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               season,
               style: TextStyle(
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 fontFamily: 'Pretendard',
+                color: Color(0xFF363636),
               ),
             ),
           ],
@@ -601,6 +604,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
               fontSize: 14,
               color: Color(0xFF363636),
               fontFamily: 'Pretendard',
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
