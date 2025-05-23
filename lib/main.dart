@@ -19,6 +19,8 @@ void main() async {
     // 익명 인증 초기화 (비로그인)
     await FirebaseService.signInAnonymously();
     print('✅ 익명 인증 초기화 성공!');
+    await FirebaseService.checkAndResetAllPlants();
+    print('✅ 주간 조회수 리셋 체크 완료!');
   } catch (e) {
     print('❌ Firebase 초기화 실패: $e');
   }

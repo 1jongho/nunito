@@ -223,11 +223,12 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                 color: Colors.grey[200],
               ),
               child:
-                  plant['imageUrl'] != null && plant['imageUrl'].isNotEmpty
+                  plant['imageUrl'] != null &&
+                          plant['imageUrl'].toString().isNotEmpty
                       ? ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          plant['imageUrl'],
+                          plant['imageUrl'].toString(),
                           fit: BoxFit.cover,
                           width: 80,
                           height: 80,
@@ -247,6 +248,12 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
+                            // 디버깅을 위한 로그 출력
+                            print('이미지 로드 실패:');
+                            print('  - 식물: ${plant['nickname'] ?? 'Unknown'}');
+                            print('  - URL: ${plant['imageUrl']}');
+                            print('  - 오류: $error');
+
                             return Icon(
                               Icons.spa,
                               color: Color(0xFF0BB57F),
