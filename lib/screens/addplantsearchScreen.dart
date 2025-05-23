@@ -3,6 +3,8 @@ import 'package:nunito/models/plant.dart';
 import 'package:nunito/screens/addplantScreen.dart';
 import 'package:nunito/screens/plantdetailScreen.dart';
 import 'package:nunito/services/plant_api_service.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AddPlantSearchScreen extends StatefulWidget {
   const AddPlantSearchScreen({super.key});
@@ -222,7 +224,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         title: Text(
           '식물 추가',
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
             fontFamily: 'Pretendard',
             color: Color(0xFF363636),
@@ -247,7 +249,12 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
                 controller: _searchController,
                 decoration: InputDecoration(
                   hintText: '식물명을 입력해주세요.',
-                  hintStyle: TextStyle(fontFamily: 'Pretendard', fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: Colors.grey[800],
+                    fontFamily: 'Pretendard',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
                   prefixIcon: Icon(Icons.search, size: 20),
                   suffixIcon: IconButton(
                     icon: Icon(Icons.clear, size: 20),
@@ -273,7 +280,7 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide(color: Color(0xFF0BB57F), width: 2),
+                    borderSide: BorderSide(color: Color(0xFF0BB57F), width: 1),
                   ),
                   filled: true,
                   fillColor: Color(0xffF3F3F3),
@@ -455,80 +462,58 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         vertical: size.height * 0.015,
       ),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
+        border: Border(bottom: BorderSide(color: Colors.grey[100]!)),
       ),
       child: Row(
         children: [
-          // 식물 이미지 (클릭 가능하게 수정)
-          InkWell(
-            onTap: () {
-              // 사용자 정의 식물이 아닌 경우에만 상세 페이지로 이동
-              if (!isCustomPlant) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => PlantDetailScreen(
-                          cntntsNo: plant.cntntsNo,
-                          imageUrl: imageUrl,
-                          plantName: plant.cntntsSj, // 이 부분이 빠져있었음!
-                        ),
-                  ),
-                );
-              }
-            },
-            child: Container(
-              width: isTablet ? 60 : 48,
-              height: isTablet ? 60 : 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.green[100],
-              ),
-              child:
-                  isCustomPlant || imageUrl.isEmpty
-                      ? Icon(
-                        Icons.spa,
-                        color: Colors.green,
-                        size: isTablet ? 30 : 24,
-                      )
-                      : ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          width: isTablet ? 60 : 48,
-                          height: isTablet ? 60 : 48,
-                          headers: {
-                            'User-Agent': 'Mozilla/5.0 (compatible; Flutter)',
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value:
-                                    loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
-                                color: Color(0xFF0BB57F),
-                                strokeWidth: 2.0,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            print(
-                              '식물 이미지 로딩 실패: ${plant.cntntsSj} - $imageUrl - $error',
-                            );
-                            return Icon(
-                              Icons.spa,
-                              color: Colors.green,
-                              size: isTablet ? 30 : 24,
-                            );
-                          },
-                        ),
-                      ),
+          // 식물 이미지
+          Container(
+            width: isTablet ? 60 : 48,
+            height: isTablet ? 60 : 48,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
             ),
+            child:
+                isCustomPlant || imageUrl.isEmpty
+                    ? SvgPicture.asset(
+                      'assets/image/default_plant_image.svg', // SVG 파일 경로
+                      width: 12,
+                      height: 12,
+                    )
+                    : ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        width: isTablet ? 60 : 48,
+                        height: isTablet ? 60 : 48,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value:
+                                  loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                              color: Color(0xFFFFFFFF),
+                              strokeWidth: 2.0,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          print(
+                            '식물 이미지 로딩 실패: ${plant.cntntsSj} - $imageUrl - $error',
+                          );
+                          return Icon(
+                            Icons.spa,
+                            color: Colors.green,
+                            size: isTablet ? 30 : 24,
+                          );
+                        },
+                      ),
+                    ),
           ),
           SizedBox(width: size.width * 0.04),
 

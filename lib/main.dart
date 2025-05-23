@@ -38,6 +38,31 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.light(surface: Colors.white),
+        // 개별 버튼 타입별 설정
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: Colors.transparent, // 오버레이 색상 투명
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: Colors.transparent,
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: Colors.transparent,
+          ),
+        ),
+        iconButtonTheme: IconButtonThemeData(
+          style: IconButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            overlayColor: Colors.transparent,
+          ),
+        ),
       ),
       home: IntroScreen(),
     );

@@ -472,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getDisplayName() {
     if (_isLoading) return '로딩 중...';
     if (_hasError) return '오류 발생';
-    if (_myPlants.isEmpty) return '식물을 추가해보세요';
+    if (_myPlants.isEmpty) return '애칭';
 
     final currentPlant = _myPlants[_currentPage];
     return currentPlant['nickname'] ?? '이름 없음';
@@ -482,7 +482,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getDisplayScientificName() {
     if (_isLoading) return '';
     if (_hasError) return '다시 시도해주세요';
-    if (_myPlants.isEmpty) return '아래 버튼을 눌러주세요';
+    if (_myPlants.isEmpty) return '학명';
 
     final currentPlant = _myPlants[_currentPage];
     return currentPlant['scientificName'] ?? '';

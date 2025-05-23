@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/screens/plantbookScreen.dart';
-import 'package:flutter_svg/flutter_svg.dart'; // SVG를 위한 import 추가
-import 'package:nunito/widgets/modal/date_picker_modal.dart'; // 날짜 선택기 import
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nunito/widgets/modal/date_picker_modal.dart';
+import 'package:nunito/widgets/modal/alarm.dart';
+import 'package:nunito/widgets/switch.dart';
 import 'package:intl/intl.dart';
 
 class AddPlantScreen extends StatefulWidget {
-  final String? scientificName; // 학명 파라미터 추가
+  final String? scientificName;
 
   const AddPlantScreen({super.key, this.scientificName});
 
@@ -24,6 +26,34 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
   // 컨트롤러 추가
   late TextEditingController _scientificNameController;
   final TextEditingController _nicknameController = TextEditingController();
+
+  // 알림 설정 상태 변수들
+  Map<String, bool> _alarmStates = {
+    '수분 알림': true,
+    '온도 알림': true,
+    '전도도 알림': true,
+  };
+
+  // 각 알림별 현재 선택된 값
+  Map<String, int> _alarmValues = {
+    '수분 알림': 30, // 기본값: 30%
+    '온도 알림': 22, // 기본값: 22°C
+    '전도도 알림': 3, // 기본값: 3 mS/cm
+  };
+
+  // 관리자가 설정한 각 알림별 허용 범위 (최소값~최대값)
+  final Map<String, Map<String, int>> _alarmRanges = {
+    '수분 알림': {'min': 10, 'max': 90}, // 10% ~ 90%
+    '온도 알림': {'min': 5, 'max': 35}, // 5°C ~ 35°C
+    '전도도 알림': {'min': 1, 'max': 10}, // 1 ~ 10 mS/cm
+  };
+
+  // 각 알림별 단위
+  final Map<String, String> _alarmUnits = {
+    '수분 알림': '%',
+    '온도 알림': '°C',
+    '전도도 알림': 'mS/cm',
+  };
 
   @override
   void initState() {
@@ -45,7 +75,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
 
   @override
   void dispose() {
-    _scientificNameController.dispose(); // 컨트롤러 해제
+    _scientificNameController.dispose();
     _nicknameController.dispose();
     super.dispose();
   }
@@ -80,7 +110,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                 ? [
                   TextButton(
                     onPressed: () {
-                      // 건너뛰기 로직
                       _savePlant();
                     },
                     child: Text(
@@ -186,7 +215,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   '애칭',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     fontFamily: 'Pretendard',
                   ),
                 ),
@@ -199,11 +228,12 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                       border: InputBorder.none,
                       hintStyle: TextStyle(
                         fontFamily: 'Pretendard',
-                        fontSize: 14,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                         color: Colors.grey,
                       ),
-                      isDense: true, // 텍스트필드 높이 줄이기
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
                     ),
                     onChanged: (value) {
                       plantDetails['nickname'] = value;
@@ -229,24 +259,25 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                   '학명',
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     fontFamily: 'Pretendard',
                   ),
                 ),
                 SizedBox(width: 16),
                 Expanded(
                   child: TextField(
-                    controller: _scientificNameController, // 컨트롤러 사용
+                    controller: _scientificNameController,
                     decoration: InputDecoration(
                       hintText: '반려 식물의 학명을 입력해주세요.',
                       border: InputBorder.none,
                       hintStyle: TextStyle(
                         fontFamily: 'Pretendard',
-                        fontSize: 14,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                         color: Colors.grey,
                       ),
-                      isDense: true, // 텍스트필드 높이 줄이기
-                      contentPadding: EdgeInsets.symmetric(vertical: 8),
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 4),
                     ),
                     onChanged: (value) {
                       plantDetails['scientificName'] = value;
@@ -262,7 +293,6 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           // 함께한 시간 입력 필드
           InkWell(
             onTap: () {
-              // DatePickerModal.show 정적 메서드 사용
               DatePickerModal.show(
                 context: context,
                 initialDate: selectedDate,
@@ -291,7 +321,7 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                     '함께한 시간',
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Pretendard',
                     ),
                   ),
@@ -301,12 +331,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                       DateFormat('yyyy/MM/dd').format(selectedDate),
                       style: TextStyle(
                         fontFamily: 'Pretendard',
-                        fontSize: 14,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                         color: Colors.grey[700],
                       ),
                     ),
                   ),
-                  Icon(Icons.calendar_today, color: Colors.black54),
+                  Icon(Icons.calendar_today_rounded, color: Color(0xFF363636)),
                 ],
               ),
             ),
@@ -332,29 +363,27 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
           SizedBox(height: 32),
 
           Center(
-            // Icon 대신 SvgPicture 사용
             child: SvgPicture.asset(
               'assets/icon/water_drop.svg',
-              width: 80,
-              height: 80,
-              color: Colors.blue,
+              width: 70,
+              height: 70,
             ),
           ),
 
           SizedBox(height: 40),
 
           // 수분 알림 설정
-          _buildAlarmSettingItem('수분 알림', '30%'),
+          _buildAlarmSettingItem('수분 알림'),
 
           SizedBox(height: 16),
 
           // 온도 알림 설정
-          _buildAlarmSettingItem('온도 알림', '20°C'),
+          _buildAlarmSettingItem('온도 알림'),
 
           SizedBox(height: 16),
 
           // 전도도 알림 설정
-          _buildAlarmSettingItem('전도도 알림', '3.0mS/cm'),
+          _buildAlarmSettingItem('전도도 알림'),
         ],
       ),
     );
@@ -365,37 +394,35 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SizedBox(height: 40),
+          SizedBox(height: 100),
 
           // 식물 아이콘 또는 이미지
           Container(
-            width: 120,
-            height: 120,
+            width: 180,
+            height: 180,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: Colors.grey[300]!, width: 1),
+              border: Border.all(color: Colors.grey[300]!, width: 0.5),
             ),
             child: Center(
-              // 여기에도 SVG 사용하려면 아래 코드 활용
               child: SvgPicture.asset(
-                'assets/icon/plantbook_T.svg', // 적절한 SVG 파일 경로로 변경
-                width: 60,
-                height: 60,
-                color: Color(0xFF0BB57F),
+                'assets/image/default_plant_image.svg',
+                width: 70,
+                height: 70,
               ),
             ),
           ),
 
-          SizedBox(height: 60),
+          SizedBox(height: 80),
 
           // 사진 등록 버튼
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Color(0xFF363636),
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 36, vertical: 14),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(18),
               ),
             ),
             onPressed: () {
@@ -406,7 +433,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: 'Pretendard',
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
             ),
           ),
@@ -415,52 +443,110 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
     );
   }
 
-  Widget _buildAlarmSettingItem(String title, String value) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Pretendard',
-              color: Color(0xFF0BB57F),
+  Widget _buildAlarmSettingItem(String title) {
+    final currentValue = _alarmValues[title]!;
+    final isEnabled = _alarmStates[title]!;
+    final range = _alarmRanges[title]!;
+    final unit = _alarmUnits[title]!;
+
+    return InkWell(
+      onTap: () {
+        // 알림 설정 모달 표시
+        AlarmSettingModal.show(
+          context: context,
+          title: title,
+          minValue: range['min']!,
+          maxValue: range['max']!,
+          initialValue: currentValue,
+          unit: unit,
+          onValueSelected: (selectedValue) {
+            setState(() {
+              _alarmValues[title] = selectedValue;
+            });
+          },
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Pretendard',
+                color: Color(0xFF0BB57F),
+              ),
             ),
-          ),
-          Spacer(),
-          Text(value, style: TextStyle(fontSize: 16, fontFamily: 'Pretendard')),
-          SizedBox(width: 10),
-          Icon(Icons.arrow_drop_up_outlined, size: 18),
-          Icon(Icons.arrow_drop_down_outlined, size: 18),
-          SizedBox(width: 20),
-          // 스위치 추가
-          Switch(
-            value: true, // 상태 관리 필요
-            onChanged: (value) {
-              // 상태 변경 처리
-            },
-            activeColor: Color(0xFF0BB57F),
-            activeTrackColor: Color(0xFFE0F7F0),
-          ),
-        ],
+            Spacer(),
+            Text(
+              '$currentValue$unit',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: 'Pretendard',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF363636),
+              ),
+            ),
+            SizedBox(width: 10),
+            Icon(Icons.unfold_more_rounded, size: 30, color: Color(0xFF363636)),
+            SizedBox(width: 10),
+            // 스위치
+            CustomSwitch(
+              value: isEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _alarmStates[title] = value;
+                });
+              },
+              activeColor: Colors.white, // ON 상태 썸 색상
+              inactiveColor: Colors.white, // OFF 상태 썸 색상
+              activeTrackColor: Color(0xFF0BB57F), // ON 상태 트랙 색상
+              inactiveTrackColor: Color(0xFFB0B0B0)!, // OFF 상태 트랙 색상
+              width: 51, // 스위치 너비
+              height: 31, // 스위치 높이
+              animationDuration: Duration(milliseconds: 80), // 애니메이션 속도
+            ),
+          ],
+        ),
       ),
     );
   }
 
   void _savePlant() {
-    // 식물 정보 저장 로직
+    // 알림 설정 정보를 plantDetails에 추가
+    plantDetails['alarmSettings'] = {
+      'moistureAlarm': {
+        'enabled': _alarmStates['수분 알림'],
+        'value': _alarmValues['수분 알림'],
+        'unit': _alarmUnits['수분 알림'],
+      },
+      'temperatureAlarm': {
+        'enabled': _alarmStates['온도 알림'],
+        'value': _alarmValues['온도 알림'],
+        'unit': _alarmUnits['온도 알림'],
+      },
+      'conductivityAlarm': {
+        'enabled': _alarmStates['전도도 알림'],
+        'value': _alarmValues['전도도 알림'],
+        'unit': _alarmUnits['전도도 알림'],
+      },
+    };
+
+    print('저장될 식물 정보: $plantDetails'); // 디버깅용
+
     // Firebase나 다른 저장소에 데이터 저장
+    // TODO: Firebase 저장 로직 구현
 
     // 저장 완료 후 식물도감 화면으로 이동
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => PlantBookScreen()),
-      (route) => false, // 네비게이션 스택 초기화
+      (route) => false,
     );
   }
 }
