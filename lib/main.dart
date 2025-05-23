@@ -4,6 +4,7 @@ import 'package:nunito/firebase_options.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:nunito/screens/introScreen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:nunito/services/firebase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,10 +16,12 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     print('✅ Firebase 초기화 성공!');
+    // 익명 인증 초기화 (비로그인)
+    await FirebaseService.signInAnonymously();
+    print('✅ 익명 인증 초기화 성공!');
   } catch (e) {
     print('❌ Firebase 초기화 실패: $e');
   }
-
   await initializeDateFormatting('ko-KR', null);
   runApp(const MyApp());
 }

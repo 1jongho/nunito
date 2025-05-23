@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/services/plant_api_service.dart';
 import 'package:nunito/models/plant.dart';
 import 'package:nunito/screens/addplantScreen.dart';
@@ -74,6 +73,7 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         title: Text(
           '식물도감',
           style: TextStyle(
@@ -84,10 +84,10 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: Color(0xFF363636),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, size: 20),
+          icon: Icon(Icons.arrow_back_rounded, size: 28),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

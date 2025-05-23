@@ -1,9 +1,7 @@
-// lib/services/plant_api_service.dart 파일 수정
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 import 'package:nunito/models/plant.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:nunito/services/plant_api_service.dart';
 
 class PlantApiService {
   late final String apiKey;
