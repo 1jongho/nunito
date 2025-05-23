@@ -27,8 +27,6 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
   @override
   void initState() {
     super.initState();
-    // 디버깅을 위한 로그 추가
-    print("전달받은 이미지 URL: ${widget.imageUrl}");
     _loadPlantDetail();
   }
 
@@ -460,7 +458,6 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
     // 전달받은 이미지 URL 사용 (이 부분이 중요!)
     if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty) {
       imageUrl = widget.imageUrl!;
-      print("사용할 이미지 URL: $imageUrl"); // 디버깅 로그
     }
 
     return Container(
