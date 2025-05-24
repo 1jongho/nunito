@@ -8,6 +8,7 @@ import 'package:nunito/screens/addplantsearchScreen.dart';
 import 'package:nunito/screens/settingScreen.dart';
 import 'package:nunito/services/firebase_service.dart'; // Firebase 서비스
 import 'package:cloud_firestore/cloud_firestore.dart'; // Timestamp 사용을 위해 추가
+import 'package:nunito/screens/plantdetailmyScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -101,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final viewCount = plant['viewCount'] ?? 0;
         final updatedAt = plant['updatedAt'] as Timestamp?;
         print(
-          '${i + 1}. ${plant['nickname']} - 조회수: ${viewCount}회, 업데이트: ${updatedAt?.toDate()}',
+          '${i + 1}. ${plant['nickname']} - 조회수: $viewCount회, 업데이트: ${updatedAt?.toDate()}',
         );
       }
     } catch (e) {
@@ -351,59 +352,76 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 실제 식물 데이터로 식물 아이템 생성 (조회수 기록 포함)
   Widget _buildPlantItem(Map<String, dynamic> plant) {
-    return Center(
-      child: Container(
-        width: 180,
-        height: 180,
-        decoration: ShapeDecoration(
-          color: Colors.white, // 연한 배경색 추가
-          shape: OvalBorder(
-            side: BorderSide(width: 0.40, color: const Color(0xFFDEDEDE)),
+    return GestureDetector(
+      // 또는 InkWell 사용 가능
+      onTap: () {
+        // 식물 상세 페이지로 이동
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PlantDetailMyScreen(plant: plant),
           ),
-        ),
-        child: Center(
-          child:
-              plant['imageUrl'] != null &&
-                      plant['imageUrl'].toString().isNotEmpty
-                  ? ClipOval(
-                    child: Image.network(
-                      plant['imageUrl'].toString(),
-                      width: 180,
-                      height: 180,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return CircularProgressIndicator(
-                          value:
-                              loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                          color: Color(0xFF0BB57F),
-                          strokeWidth: 3,
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        print('홈 화면 이미지 로드 실패: ${plant['nickname']} - $error');
-                        return Container(
-                          padding: EdgeInsets.all(30), // SVG 주변 여백
-                          child: SvgPicture.asset(
-                            'assets/image/default_plant_image.svg',
-                            width: 80,
-                            height: 80,
-                          ),
-                        );
-                      },
+        ).then((_) {
+          // 상세 페이지에서 돌아왔을 때 홈 화면 데이터 새로고침
+          _refreshPlants();
+        });
+      },
+      child: Center(
+        child: Container(
+          width: 180,
+          height: 180,
+          decoration: ShapeDecoration(
+            color: Colors.white, // 연한 배경색 추가
+            shape: OvalBorder(
+              side: BorderSide(width: 0.40, color: const Color(0xFFDEDEDE)),
+            ),
+          ),
+          child: Center(
+            child:
+                plant['imageUrl'] != null &&
+                        plant['imageUrl'].toString().isNotEmpty
+                    ? ClipOval(
+                      child: Image.network(
+                        plant['imageUrl'].toString(),
+                        width: 180,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return CircularProgressIndicator(
+                            value:
+                                loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                            color: Color(0xFF0BB57F),
+                            strokeWidth: 3,
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          print(
+                            '홈 화면 이미지 로드 실패: ${plant['nickname']} - $error',
+                          );
+                          return Container(
+                            padding: EdgeInsets.all(30), // SVG 주변 여백
+                            child: SvgPicture.asset(
+                              'assets/image/default_plant_image.svg',
+                              width: 80,
+                              height: 80,
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                    : Container(
+                      padding: EdgeInsets.all(30), // SVG 주변 여백
+                      child: SvgPicture.asset(
+                        'assets/image/default_plant_image.svg',
+                        width: 80,
+                        height: 80,
+                      ),
                     ),
-                  )
-                  : Container(
-                    padding: EdgeInsets.all(30), // SVG 주변 여백
-                    child: SvgPicture.asset(
-                      'assets/image/default_plant_image.svg',
-                      width: 80,
-                      height: 80,
-                    ),
-                  ),
+          ),
         ),
       ),
     );

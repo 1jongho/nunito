@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -363,10 +364,14 @@ class FirebaseService {
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
 
-        // 조회 통계 관련 필드 추가
-        'viewCount': 0, // 이번 주 조회수
-        'lastViewedAt': null, // 마지막 조회 시간
-        'weeklyResetDate': Timestamp.fromDate(_getNextSunday()), // 다음 일요일
+        // 블루투스 연결 상태 필드 추가 (기본값: false)
+        'isBluetoothConnected': false,
+        'bluetoothConnectedAt': null, // 연결된 시간 (연결되면 업데이트)
+        'bluetoothDeviceId': null, // 연결된 블루투스 기기 ID (향후 사용)
+        // 조회 통계 관련 필드
+        'viewCount': 0,
+        'lastViewedAt': null,
+        'weeklyResetDate': Timestamp.fromDate(_getNextSunday()),
       });
 
       print('✅ 식물 추가 성공: ${docRef.id}');
@@ -374,6 +379,43 @@ class FirebaseService {
     } catch (e) {
       print('❌ 식물 추가 실패: $e');
       throw Exception('식물 정보 저장에 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  static Future<void> updateBluetoothConnection({
+    required String plantId,
+    required bool isConnected,
+    String? deviceId,
+  }) async {
+    try {
+      print('🔄 블루투스 상태 업데이트: $plantId, 연결: $isConnected');
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('로그인이 필요합니다.');
+      }
+
+      Map<String, dynamic> updateData = {
+        'isBluetoothConnected': isConnected,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (isConnected) {
+        updateData['bluetoothConnectedAt'] = FieldValue.serverTimestamp();
+        if (deviceId != null) {
+          updateData['bluetoothDeviceId'] = deviceId;
+        }
+      } else {
+        updateData['bluetoothConnectedAt'] = null;
+        updateData['bluetoothDeviceId'] = null;
+      }
+
+      await _firestore.collection('my_plants').doc(plantId).update(updateData);
+
+      print('✅ 블루투스 상태 업데이트 완료');
+    } catch (e) {
+      print('❌ 블루투스 상태 업데이트 실패: $e');
+      throw Exception('블루투스 상태 업데이트에 실패했습니다: ${e.toString()}');
     }
   }
 
@@ -411,26 +453,195 @@ class FirebaseService {
     try {
       print('🔍 식물 삭제 시작: $plantId');
 
-      await _firestore.collection('my_plants').doc(plantId).delete();
+      final user = _auth.currentUser;
+      if (user == null) {
+        print('❌ 사용자가 로그인되지 않음');
+        throw Exception('로그인이 필요합니다.');
+      }
+
+      // 문서 존재 여부 확인
+      DocumentSnapshot doc = await _firestore
+          .collection('my_plants')
+          .doc(plantId)
+          .get()
+          .timeout(Duration(seconds: 10));
+
+      if (!doc.exists) {
+        print('⚠️ 삭제하려는 식물이 존재하지 않음: $plantId');
+        throw Exception('삭제하려는 식물을 찾을 수 없습니다.');
+      }
+
+      // 권한 확인 (본인의 식물인지)
+      Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+      if (data?['userId'] != user.uid) {
+        print('❌ 삭제 권한 없음: ${data?['userId']} != ${user.uid}');
+        throw Exception('이 식물을 삭제할 권한이 없습니다.');
+      }
+
+      // 관련 데이터들도 함께 삭제 (일지, 센서 데이터 등)
+      WriteBatch batch = _firestore.batch();
+
+      // 1. 식물 문서 삭제
+      batch.delete(doc.reference);
+
+      // 2. 관련 일지들 삭제 (존재 여부 확인 후)
+      try {
+        // 먼저 컬렉션이 존재하고 데이터가 있는지 확인
+        QuerySnapshot diarySnapshot = await _firestore
+            .collection('plant_diaries')
+            .where('plantId', isEqualTo: plantId)
+            .where('userId', isEqualTo: user.uid)
+            .limit(1) // 한 개만 확인
+            .get()
+            .timeout(Duration(seconds: 3));
+
+        if (diarySnapshot.docs.isNotEmpty) {
+          // 데이터가 있으면 전체 삭제 진행
+          QuerySnapshot allDiariesSnapshot = await _firestore
+              .collection('plant_diaries')
+              .where('plantId', isEqualTo: plantId)
+              .where('userId', isEqualTo: user.uid)
+              .get()
+              .timeout(Duration(seconds: 5));
+
+          print('📖 삭제할 일지 개수: ${allDiariesSnapshot.docs.length}');
+
+          for (QueryDocumentSnapshot diaryDoc in allDiariesSnapshot.docs) {
+            try {
+              await diaryDoc.reference.delete().timeout(Duration(seconds: 3));
+              print('✅ 일지 삭제 성공: ${diaryDoc.id}');
+            } catch (deleteError) {
+              print('⚠️ 개별 일지 삭제 실패: ${diaryDoc.id} - $deleteError');
+            }
+          }
+        } else {
+          print('ℹ️ 삭제할 일지가 없음 (정상)');
+        }
+      } catch (e) {
+        print('⚠️ 일지 삭제 실패 (무시): $e');
+        // 컬렉션이 없거나 권한 문제일 수 있음 - 무시하고 계속
+      }
+
+      // 3. 관련 센서 데이터들 삭제 (존재 여부 확인 후)
+      try {
+        // 먼저 컬렉션이 존재하고 데이터가 있는지 확인
+        QuerySnapshot sensorSnapshot = await _firestore
+            .collection('sensor_data')
+            .where('plantId', isEqualTo: plantId)
+            .where('userId', isEqualTo: user.uid)
+            .limit(1) // 한 개만 확인
+            .get()
+            .timeout(Duration(seconds: 3));
+
+        if (sensorSnapshot.docs.isNotEmpty) {
+          // 데이터가 있으면 전체 삭제 진행
+          QuerySnapshot allSensorSnapshot = await _firestore
+              .collection('sensor_data')
+              .where('plantId', isEqualTo: plantId)
+              .where('userId', isEqualTo: user.uid)
+              .get()
+              .timeout(Duration(seconds: 5));
+
+          print('📊 삭제할 센서 데이터 개수: ${allSensorSnapshot.docs.length}');
+
+          for (QueryDocumentSnapshot sensorDoc in allSensorSnapshot.docs) {
+            try {
+              await sensorDoc.reference.delete().timeout(Duration(seconds: 3));
+              print('✅ 센서 데이터 삭제 성공: ${sensorDoc.id}');
+            } catch (deleteError) {
+              print('⚠️ 개별 센서 데이터 삭제 실패: ${sensorDoc.id} - $deleteError');
+            }
+          }
+        } else {
+          print('ℹ️ 삭제할 센서 데이터가 없음 (정상)');
+        }
+      } catch (e) {
+        print('⚠️ 센서 데이터 삭제 실패 (무시): $e');
+        // 컬렉션이 없거나 권한 문제일 수 있음 - 무시하고 계속
+      }
+
+      // 배치 실행 (메인 식물 문서만)
+      batch.delete(doc.reference);
+      await batch.commit().timeout(Duration(seconds: 15));
 
       print('✅ 식물 삭제 성공: $plantId');
     } catch (e) {
       print('❌ 식물 삭제 실패: $e');
-      throw Exception('식물 정보 삭제에 실패했습니다: ${e.toString()}');
+
+      if (e is TimeoutException) {
+        throw Exception('삭제 요청이 시간 초과되었습니다. 네트워크 연결을 확인해주세요.');
+      } else if (e is FirebaseException) {
+        switch (e.code) {
+          case 'permission-denied':
+            throw Exception('삭제 권한이 없습니다.');
+          case 'not-found':
+            throw Exception('삭제하려는 식물을 찾을 수 없습니다.');
+          case 'unavailable':
+            throw Exception('Firebase 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+          default:
+            throw Exception('삭제 중 오류가 발생했습니다: ${e.message}');
+        }
+      } else {
+        throw Exception('식물 정보 삭제에 실패했습니다: ${e.toString()}');
+      }
     }
   }
 
+  // 개선된 이미지 삭제 함수
   static Future<void> deleteImage(String imageUrl) async {
     try {
       print('🔍 이미지 삭제 시작: $imageUrl');
 
+      if (imageUrl.isEmpty) {
+        print('⚠️ 빈 이미지 URL');
+        return;
+      }
+
+      // URL 유효성 검사
+      if (!imageUrl.contains('firebase') && !imageUrl.contains('googleapis')) {
+        print('⚠️ Firebase Storage URL이 아님: $imageUrl');
+        throw Exception('올바른 Firebase Storage URL이 아닙니다.');
+      }
+
       Reference imageRef = _storage.refFromURL(imageUrl);
-      await imageRef.delete();
+
+      // 파일 존재 여부 확인
+      try {
+        await imageRef.getMetadata().timeout(Duration(seconds: 5));
+      } catch (e) {
+        if (e.toString().contains('object-not-found') ||
+            e.toString().contains('not-found')) {
+          print('⚠️ 이미지가 이미 삭제되었거나 존재하지 않음');
+          return; // 이미 없는 파일은 삭제 성공으로 간주
+        }
+        rethrow;
+      }
+
+      // 실제 삭제
+      await imageRef.delete().timeout(Duration(seconds: 10));
 
       print('✅ 이미지 삭제 성공');
     } catch (e) {
       print('❌ 이미지 삭제 실패: $e');
-      throw Exception('이미지 삭제에 실패했습니다: ${e.toString()}');
+
+      if (e is TimeoutException) {
+        throw Exception('이미지 삭제가 시간 초과되었습니다.');
+      } else if (e is FirebaseException) {
+        switch (e.code) {
+          case 'object-not-found':
+          case 'not-found':
+            print('ℹ️ 이미지가 이미 삭제됨 (성공으로 처리)');
+            return; // 이미 없는 파일은 성공으로 간주
+          case 'unauthorized':
+            throw Exception('이미지 삭제 권한이 없습니다.');
+          case 'retry-limit-exceeded':
+            throw Exception('이미지 삭제 재시도 한도를 초과했습니다.');
+          default:
+            throw Exception('이미지 삭제 중 오류가 발생했습니다: ${e.message}');
+        }
+      } else {
+        throw Exception('이미지 삭제에 실패했습니다: ${e.toString()}');
+      }
     }
   }
 
@@ -467,6 +678,140 @@ class FirebaseService {
       print('✅ 만료된 식물들의 조회수 리셋 완료');
     } catch (e) {
       print('❌ 일괄 리셋 실패: $e');
+    }
+  }
+
+  /// 식물 조회수 증가 (7일 주기 리셋)
+  static Future<void> incrementPlantViewCount(String plantId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        await signInAnonymously();
+      }
+
+      print('📊 조회수 증가 시작: $plantId');
+
+      DocumentReference plantRef = _firestore
+          .collection('my_plants')
+          .doc(plantId);
+
+      await _firestore.runTransaction((transaction) async {
+        DocumentSnapshot plantDoc = await transaction.get(plantRef);
+
+        if (!plantDoc.exists) {
+          throw Exception('식물 문서를 찾을 수 없습니다.');
+        }
+
+        Map<String, dynamic> data = plantDoc.data() as Map<String, dynamic>;
+
+        // 현재 조회수 가져오기 (기본값: 0)
+        int currentViewCount = data['viewCount'] ?? 0;
+
+        // 주간 리셋 날짜 확인
+        Timestamp? resetTimestamp = data['weeklyResetDate'] as Timestamp?;
+        DateTime now = DateTime.now();
+
+        // 리셋 날짜가 없거나 지난 경우 새로운 리셋 날짜 설정
+        bool needsReset = false;
+        if (resetTimestamp == null || now.isAfter(resetTimestamp.toDate())) {
+          needsReset = true;
+        }
+
+        Map<String, dynamic> updateData = {
+          'viewCount': needsReset ? 1 : currentViewCount + 1, // 리셋 또는 증가
+          'lastViewedAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
+        // 리셋이 필요한 경우 새로운 리셋 날짜 설정
+        if (needsReset) {
+          updateData['weeklyResetDate'] = Timestamp.fromDate(_getNextSunday());
+          print('🔄 주간 조회수 리셋: $plantId');
+        }
+
+        transaction.update(plantRef, updateData);
+
+        print('✅ 조회수 업데이트: ${needsReset ? 1 : currentViewCount + 1}');
+      });
+    } catch (e) {
+      print('❌ 조회수 증가 실패: $e');
+      throw Exception('조회수 업데이트에 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// 인기 식물 3개 조회 (7일간 조회수 기준)
+  static Future<List<Map<String, dynamic>>> getTopViewedPlantsThisWeek() async {
+    try {
+      print('🔍 이번 주 인기 식물 조회 시작...');
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        print('❌ 사용자가 로그인되지 않음');
+        return [];
+      }
+
+      // 먼저 만료된 식물들 리셋 체크
+      await checkAndResetAllPlants();
+
+      // 조회수 기준으로 정렬하여 상위 3개 조회
+      QuerySnapshot snapshot =
+          await _firestore
+              .collection('my_plants')
+              .where('userId', isEqualTo: user.uid)
+              .orderBy('viewCount', descending: true) // 조회수 높은 순
+              .limit(3) // 상위 3개만
+              .get();
+
+      print('✅ 인기 식물 쿼리 완료: ${snapshot.docs.length}개');
+
+      List<Map<String, dynamic>> plants = [];
+      for (var doc in snapshot.docs) {
+        try {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+          data['id'] = doc.id;
+          plants.add(data);
+
+          // 디버깅 정보
+          print('📊 ${data['nickname']}: ${data['viewCount'] ?? 0}회 조회');
+        } catch (e) {
+          print('❌ 문서 변환 실패 (${doc.id}): $e');
+        }
+      }
+
+      // 조회수가 0인 경우 최신 등록순으로 정렬
+      if (plants.isEmpty ||
+          plants.every((plant) => (plant['viewCount'] ?? 0) == 0)) {
+        print('📝 조회수가 없어서 최신 등록순으로 조회');
+
+        QuerySnapshot fallbackSnapshot =
+            await _firestore
+                .collection('my_plants')
+                .where('userId', isEqualTo: user.uid)
+                .orderBy('createdAt', descending: true)
+                .limit(3)
+                .get();
+
+        plants =
+            fallbackSnapshot.docs.map((doc) {
+              Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+              data['id'] = doc.id;
+              return data;
+            }).toList();
+      }
+
+      print('✅ 최종 반환 식물 수: ${plants.length}');
+      return plants;
+    } catch (e) {
+      print('❌ 인기 식물 조회 실패: $e');
+
+      // 오류 발생 시 기본 조회로 폴백
+      try {
+        print('🔄 기본 조회로 폴백 시도...');
+        return await getMyPlants();
+      } catch (fallbackError) {
+        print('❌ 폴백도 실패: $fallbackError');
+        return [];
+      }
     }
   }
 
@@ -640,6 +985,53 @@ class FirebaseService {
     } catch (e) {
       print('❌ 센서 데이터 조회 실패: $e');
       return null;
+    }
+  }
+
+  static Future<void> migrateExistingPlantsForBluetooth() async {
+    try {
+      print('🔄 기존 식물 데이터 블루투스 필드 마이그레이션 시작...');
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        await signInAnonymously();
+      }
+
+      // 모든 내 식물 조회
+      QuerySnapshot snapshot =
+          await _firestore
+              .collection('my_plants')
+              .where('userId', isEqualTo: _auth.currentUser?.uid)
+              .get();
+
+      WriteBatch batch = _firestore.batch();
+      int migrationCount = 0;
+
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+        // isBluetoothConnected 필드가 없는 경우에만 추가
+        if (!data.containsKey('isBluetoothConnected')) {
+          batch.update(doc.reference, {
+            'isBluetoothConnected': false, // 기본값: 연결 안됨
+            'bluetoothConnectedAt': null,
+            'bluetoothDeviceId': null,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          migrationCount++;
+          print('✅ 마이그레이션 대상: ${data['nickname']} (${doc.id})');
+        }
+      }
+
+      if (migrationCount > 0) {
+        await batch.commit();
+        print('✅ 블루투스 필드 마이그레이션 완료: $migrationCount개 식물');
+      } else {
+        print('ℹ️ 마이그레이션할 식물이 없습니다 (모든 식물이 이미 업데이트됨)');
+      }
+    } catch (e) {
+      print('❌ 블루투스 필드 마이그레이션 실패: $e');
+      throw Exception('마이그레이션에 실패했습니다: ${e.toString()}');
     }
   }
 }

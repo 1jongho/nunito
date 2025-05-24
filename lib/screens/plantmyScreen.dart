@@ -4,6 +4,7 @@ import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/screens/homeScreen.dart';
 import 'package:nunito/screens/plantdetailmyScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async'; // TimeoutException 사용을 위해 추가
 
 class PlantMyScreen extends StatefulWidget {
   const PlantMyScreen({super.key});
@@ -14,7 +15,6 @@ class PlantMyScreen extends StatefulWidget {
 
 class _PlantMyScreenState extends State<PlantMyScreen> {
   late Future<Stream<List<Map<String, dynamic>>>> _plantsStreamFuture;
-  final Map<String, bool> _bluetoothStates = {}; // 각 식물별 블루투스 연결 상태
 
   @override
   void initState() {
@@ -26,24 +26,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
     return FirebaseService.getMyPlantsStream();
   }
 
-  // 블루투스 연결 해제
-  void _disconnectBluetooth(String plantId, String plantName) {
-    setState(() {
-      _bluetoothStates[plantId] = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$plantName와 블루투스 연결이 해제되었습니다.',
-          style: TextStyle(fontFamily: 'Pretendard'),
-        ),
-        backgroundColor: Colors.orange,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
+  // 블루투스 연결 (Firebase 상태 업데이트 포함)
   Future<void> _connectBluetooth(String plantId, String plantName) async {
     // 연결 중 모달 표시
     showDialog(
@@ -59,10 +42,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(
-                  color: Color(0xFF0BB57F),
-                  strokeWidth: 3,
-                ),
+                _ThreeDotsAnimation(),
                 SizedBox(height: 16),
                 Text(
                   '블루투스 연결 중...',
@@ -74,7 +54,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  '"$plantName" 와/과 연결을 시도하고 있습니다.',
+                  '"$plantName" 와(과) 연결을 시도하고 있습니다.',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],
@@ -89,28 +69,134 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
       },
     );
 
-    // 5초 후 연결 완료
-    await Future.delayed(Duration(seconds: 5));
+    try {
+      // 5초 대기 (블루투스 연결 시뮬레이션)
+      await Future.delayed(Duration(seconds: 5));
 
-    // 모달 닫기
-    Navigator.of(context).pop();
+      // Firebase에 블루투스 연결 상태 업데이트
+      await FirebaseService.updateBluetoothConnection(
+        plantId: plantId,
+        isConnected: true,
+        deviceId:
+            'BT_${plantId}_${DateTime.now().millisecondsSinceEpoch}', // 시뮬레이션용 기기 ID
+      );
 
-    // 블루투스 상태 업데이트
-    setState(() {
-      _bluetoothStates[plantId] = true;
-    });
+      // 모달 닫기
+      Navigator.of(context).pop();
 
-    // 연결 완료 스낵바
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$plantName와 블루투스 연결이 완료되었습니다.',
-          style: TextStyle(fontFamily: 'Pretendard'),
+      // 연결 완료 스낵바
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '"$plantName" 와(과) 블루투스 연결이 완료되었습니다.',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Color(0xFF0BB57F),
+          duration: Duration(seconds: 2),
         ),
-        backgroundColor: Color(0xFF0BB57F),
-        duration: Duration(seconds: 2),
-      ),
+      );
+    } catch (e) {
+      // 모달 닫기
+      Navigator.of(context).pop();
+
+      // 오류 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '블루투스 연결에 실패했습니다: ${e.toString()}',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  // 블루투스 연결 해제 확인 모달
+  void _showDisconnectConfirmDialog(String plantId, String plantName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            '블루투스 연결 해제',
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          content: Text(
+            '"$plantName" 와(과)의 블루투스 연결을 해제하시겠습니까?',
+            style: TextStyle(fontFamily: 'Pretendard', fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                '취소',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _disconnectBluetooth(plantId, plantName);
+              },
+              child: Text(
+                '해제',
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  // 블루투스 연결 해제 (Firebase 상태 업데이트 포함)
+  Future<void> _disconnectBluetooth(String plantId, String plantName) async {
+    try {
+      // Firebase에 블루투스 연결 해제 상태 업데이트
+      await FirebaseService.updateBluetoothConnection(
+        plantId: plantId,
+        isConnected: false,
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '"$plantName" 와(과) 블루투스 연결이 해제되었습니다.',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '블루투스 연결 해제에 실패했습니다: ${e.toString()}',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override
@@ -134,7 +220,6 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, size: 28),
           onPressed: () {
-            // HomeScreen으로 이동 (기존 스택 모두 제거)
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (context) => HomeScreen()),
               (route) => false,
@@ -326,7 +411,9 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
   Widget _buildPlantItem(BuildContext context, Map<String, dynamic> plant) {
     final plantId = plant['id'] ?? '';
-    final isBluetoothConnected = _bluetoothStates[plantId] ?? false;
+
+    // Firebase에서 블루투스 연결 상태 가져오기 (기본값: false)
+    final isBluetoothConnected = plant['isBluetoothConnected'] ?? false;
 
     // Timestamp를 DateTime으로 변환
     DateTime? startDate;
@@ -457,7 +544,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
             ),
           ),
 
-          // 블루투스 버튼 (연결/해제 토글)
+          // 블루투스 버튼 (Firebase 상태 기반)
           Container(
             width: 40,
             height: 40,
@@ -473,7 +560,10 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                 if (!isBluetoothConnected) {
                   _connectBluetooth(plantId, plant['nickname'] ?? '식물');
                 } else {
-                  _disconnectBluetooth(plantId, plant['nickname'] ?? '식물');
+                  _showDisconnectConfirmDialog(
+                    plantId,
+                    plant['nickname'] ?? '식물',
+                  );
                 }
               },
               icon: Icon(
@@ -554,7 +644,6 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: 알림 설정 화면으로 이동
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('알림 설정 페이지 (준비 중)')),
                         );
@@ -589,9 +678,9 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('식물 삭제', style: TextStyle(fontFamily: 'Pretendard')),
+          title: Text('내 식물과 이별하기', style: TextStyle(fontFamily: 'Pretendard')),
           content: Text(
-            '정말로 "${plant['nickname']}"을(를) 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.',
+            '정말로 "${plant['nickname']}"와(과) 이별하시겠습니까?\n이별한 식물과는 다시 만날 수 없습니다.',
             style: TextStyle(fontFamily: 'Pretendard'),
           ),
           actions: [
@@ -604,61 +693,249 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.pop(context);
+                Navigator.pop(context); // 확인 다이얼로그 먼저 닫기
 
-                // 로딩 다이얼로그 표시
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder:
-                      (context) => Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF0BB57F),
-                        ),
-                      ),
-                );
-
-                try {
-                  // 이미지가 있다면 Storage에서도 삭제
-                  if (plant['imageUrl'] != null &&
-                      plant['imageUrl'].isNotEmpty) {
-                    await FirebaseService.deleteImage(plant['imageUrl']);
-                  }
-
-                  // Firestore에서 식물 정보 삭제
-                  await FirebaseService.deleteMyPlant(plant['id']);
-
-                  // 로딩 다이얼로그 닫기
-                  Navigator.pop(context);
-
-                  // 성공 메시지
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('식물이 삭제되었습니다.'),
-                      backgroundColor: Color(0xFF0BB57F),
-                    ),
-                  );
-                } catch (e) {
-                  // 로딩 다이얼로그 닫기
-                  Navigator.pop(context);
-
-                  // 오류 메시지
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('삭제 중 오류가 발생했습니다: ${e.toString()}'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
+                await _deletePlantWithLoading(context, plant);
               },
               child: Text(
-                '삭제',
+                '이별하기',
                 style: TextStyle(color: Colors.red, fontFamily: 'Pretendard'),
               ),
             ),
           ],
         );
       },
+    );
+  }
+
+  // 새로운 삭제 함수 (Context 문제 해결)
+  Future<void> _deletePlantWithLoading(
+    BuildContext context,
+    Map<String, dynamic> plant,
+  ) async {
+    // BuildContext가 유효한지 확인
+    if (!mounted) return;
+
+    // Context 참조를 미리 저장
+    final BuildContext dialogContext = context;
+
+    // 로딩 다이얼로그 표시
+    showDialog(
+      context: dialogContext,
+      barrierDismissible: false,
+      builder:
+          (BuildContext modalContext) => Center(
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF0BB57F)),
+                  SizedBox(height: 16),
+                  Text(
+                    '식물과 이별 중...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Pretendard',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+
+    bool isSuccess = false;
+
+    try {
+      print('🗑️ 식물 삭제 시작: ${plant['nickname']} (${plant['id']})');
+
+      // 1. 이미지 삭제 (타임아웃 설정, 실패해도 계속 진행)
+      if (plant['imageUrl'] != null &&
+          plant['imageUrl'].toString().isNotEmpty) {
+        try {
+          print('📸 이미지 삭제 시도: ${plant['imageUrl']}');
+          await FirebaseService.deleteImage(
+            plant['imageUrl'],
+          ).timeout(Duration(seconds: 10));
+          print('✅ 이미지 삭제 성공');
+        } catch (e) {
+          print('⚠️ 이미지 삭제 실패 (무시하고 계속): $e');
+        }
+      }
+
+      // 2. Firestore 문서 삭제 (타임아웃 설정)
+      print('📄 Firestore 문서 삭제 시도');
+      await FirebaseService.deleteMyPlant(
+        plant['id'],
+      ).timeout(Duration(seconds: 15));
+      print('✅ 식물 삭제 완료');
+
+      isSuccess = true;
+    } catch (e) {
+      print('❌ 식물 삭제 실패: $e');
+      isSuccess = false;
+    }
+
+    // 🔥 모달 닫기 (여러 방법 시도)
+    print('🔄 모달 닫기 시도...');
+
+    // 방법 1: Navigator의 가장 상위 라우트 제거
+    try {
+      if (Navigator.canPop(dialogContext)) {
+        Navigator.of(dialogContext, rootNavigator: true).pop();
+        print('✅ 방법1: rootNavigator로 모달 닫기 성공');
+      } else {
+        print('⚠️ 방법1: canPop이 false');
+      }
+    } catch (e1) {
+      print('⚠️ 방법1 실패: $e1');
+
+      // 방법 2: 일반 Navigator 사용
+      try {
+        Navigator.of(dialogContext).pop();
+        print('✅ 방법2: 일반 Navigator로 모달 닫기 성공');
+      } catch (e2) {
+        print('⚠️ 방법2 실패: $e2');
+
+        // 방법 3: 컨텍스트를 다시 찾아서 시도
+        try {
+          if (mounted && this.context.mounted) {
+            Navigator.of(this.context, rootNavigator: true).pop();
+            print('✅ 방법3: this.context로 모달 닫기 성공');
+          }
+        } catch (e3) {
+          print('❌ 모든 방법 실패: $e3');
+        }
+      }
+    }
+
+    // 잠시 대기 후 메시지 표시
+    await Future.delayed(Duration(milliseconds: 300));
+
+    // 결과 메시지 표시 (this.context 사용)
+    if (mounted && this.context.mounted) {
+      try {
+        if (isSuccess) {
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${plant['nickname']}와(과) 이별하였습니다.',
+                style: TextStyle(fontFamily: 'Pretendard'),
+              ),
+              backgroundColor: Color(0xFF0BB57F),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(this.context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '이별 중 오류가 발생했습니다.',
+                style: TextStyle(fontFamily: 'Pretendard'),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        print('✅ 메시지 표시 완료');
+      } catch (snackbarError) {
+        print('⚠️ SnackBar 오류: $snackbarError');
+      }
+    } else {
+      print('⚠️ this.context도 유효하지 않음');
+    }
+  }
+}
+
+// 3개 점 애니메이션 위젯
+class _ThreeDotsAnimation extends StatefulWidget {
+  @override
+  __ThreeDotsAnimationState createState() => __ThreeDotsAnimationState();
+}
+
+class __ThreeDotsAnimationState extends State<_ThreeDotsAnimation>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controllers = List.generate(
+      3,
+      (index) => AnimationController(
+        duration: Duration(milliseconds: 600),
+        vsync: this,
+      ),
+    );
+
+    _animations =
+        _controllers
+            .map(
+              (controller) => Tween<double>(begin: 0, end: -10).animate(
+                CurvedAnimation(parent: controller, curve: Curves.easeInOut),
+              ),
+            )
+            .toList();
+
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    while (mounted) {
+      for (int i = 0; i < 3; i++) {
+        if (mounted) {
+          _controllers[i].forward().then((_) {
+            if (mounted) _controllers[i].reverse();
+          });
+          await Future.delayed(Duration(milliseconds: 200));
+        }
+      }
+      await Future.delayed(Duration(milliseconds: 400));
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        3,
+        (index) => AnimatedBuilder(
+          animation: _animations[index],
+          builder: (context, child) {
+            return Container(
+              margin: EdgeInsets.symmetric(horizontal: 4),
+              child: Transform.translate(
+                offset: Offset(0, _animations[index].value),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF0BB57F),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }
