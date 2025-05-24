@@ -27,8 +27,17 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     'lastUpdated': DateTime.now(),
   };
 
+  Map<String, dynamic> _generateNormalSensorData() {
+    return {
+      'moisture': 55, // 정상 범위 40-70% 중간값
+      'temperature': 22, // 정상 범위 18-25°C 중간값
+      'conductivity': 1.5, // 정상 범위 1.0-2.0 mS/cm 중간값
+      'lastUpdated': DateTime.now(),
+    };
+  }
+
   // 일지 데이터
-  Map<String, String> _diaries = {};
+  final Map<String, String> _diaries = {};
   bool _isLoadingDiary = false;
   bool _isSavingDiary = false;
 
@@ -41,6 +50,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     _loadDiaryForDate(selectedDate);
     _loadInitialSensorData();
     _startSensorDataTimer();
+    _incrementViewCount();
   }
 
   @override
@@ -57,9 +67,9 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     });
   }
 
-  // 센서 데이터 자동 갱신 타이머 시작 (30초마다)
+  // 센서 데이터 자동 갱신 타이머 시작 (3초마다)
   void _startSensorDataTimer() {
-    _sensorUpdateTimer = Timer.periodic(Duration(seconds: 30), (timer) {
+    _sensorUpdateTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
         setState(() {
           _sensorData = FirebaseService.generateRandomSensorData();
@@ -72,6 +82,19 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
         }
       }
     });
+  }
+
+  Future<void> _incrementViewCount() async {
+    try {
+      final plantId = widget.plant['id'];
+      if (plantId != null) {
+        await FirebaseService.incrementPlantViewCount(plantId);
+        print('✅ 조회수 증가 완료: $plantId');
+      }
+    } catch (e) {
+      print('❌ 조회수 증가 실패: $e');
+      // 조회수 증가 실패는 사용자에게 알리지 않음 (백그라운드 작업)
+    }
   }
 
   // Firebase에 센서 데이터 저장 (선택적)
@@ -158,22 +181,48 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   // 센서 데이터 수동 새로고침
   void _refreshSensorData() {
     setState(() {
-      _sensorData = FirebaseService.generateRandomSensorData();
+      // 기존의 랜덤 데이터 대신 정상 수치로 설정
+      _sensorData = _generateNormalSensorData();
     });
+
+    // 성공 메시지 표시
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '센서 데이터가 정상 수치로 조정되었습니다.',
+          style: TextStyle(fontFamily: 'Pretendard'),
+        ),
+        backgroundColor: Color(0xFF0BB57F),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   // 함께한 시간 계산
   String _calculateTimeWithPlant() {
-    if (widget.plant['startDate'] == null) return '';
+    if (widget.plant['startDate'] == null) {
+      return 'D+ 1';
+    }
 
-    DateTime startDate = (widget.plant['startDate'] as Timestamp).toDate();
-    final difference = DateTime.now().difference(startDate);
-    final days = difference.inDays;
+    try {
+      DateTime startDate = (widget.plant['startDate'] as Timestamp).toDate();
+      DateTime now = DateTime.now();
 
-    if (days == 0) {
-      return 'D+ 0';
-    } else {
-      return 'D+ $days';
+      DateTime startDateOnly = DateTime(
+        startDate.year,
+        startDate.month,
+        startDate.day,
+      );
+      DateTime nowDateOnly = DateTime(now.year, now.month, now.day);
+
+      final difference = nowDateOnly.difference(startDateOnly);
+      final days = difference.inDays + 1; // +1을 추가해서 1일부터 시작
+
+      if (days < 1) return 'D+ 1';
+
+      return 'D+ $days'; // 오늘 등록하면 D+ 1
+    } catch (e) {
+      return 'D+ 1';
     }
   }
 
@@ -354,19 +403,29 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                   ),
                   SizedBox(height: 12),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ), // 균등한 패딩
                     decoration: BoxDecoration(
-                      color: Color(0xFF0BB57F).withOpacity(0.1),
+                      color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!, width: 1),
                     ),
-                    child: Text(
-                      _calculateTimeWithPlant(),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF0BB57F),
-                        fontFamily: 'Pretendard',
-                      ),
+                    child: Row(
+                      children: [
+                        Text(
+                          _calculateTimeWithPlant(),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF0BB57F),
+                            fontFamily: 'Pretendard',
+                          ),
+                        ),
+                        Spacer(),
+                      ],
                     ),
                   ),
                 ],
@@ -530,7 +589,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
 
                   // 일지 입력 영역
                   if (_isLoadingDiary)
-                    Container(
+                    SizedBox(
                       height: 120,
                       child: Center(
                         child: CircularProgressIndicator(
@@ -541,7 +600,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                   else
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Colors.grey[100],
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.grey[300]!),
                       ),
@@ -560,6 +619,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                         style: TextStyle(
                           fontFamily: 'Pretendard',
                           fontSize: 14,
+                          color: Colors.grey[700],
                         ),
                       ),
                     ),
@@ -640,9 +700,9 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       width: isFullWidth ? double.infinity : null,
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
