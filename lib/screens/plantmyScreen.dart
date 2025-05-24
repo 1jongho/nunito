@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/widgets/navbar.dart';
-import 'package:nunito/screens/homeScreen.dart'; // HomeScreen import 추가
+import 'package:nunito/screens/homeScreen.dart';
+import 'package:nunito/screens/plantdetailmyScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlantMyScreen extends StatefulWidget {
@@ -529,14 +530,20 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
                     // 메뉴 항목들
                     ListTile(
-                      leading: Icon(Icons.edit, color: Color(0xFF0BB57F)),
+                      leading: Icon(Icons.visibility, color: Color(0xFF0BB57F)),
                       title: Text(
                         '내 식물 확인하기',
                         style: TextStyle(fontFamily: 'Pretendard'),
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: 식물 정보 수정 화면으로 이동
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => PlantDetailMyScreen(plant: plant),
+                          ),
+                        );
                       },
                     ),
                     ListTile(
@@ -548,6 +555,9 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         // TODO: 알림 설정 화면으로 이동
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('알림 설정 페이지 (준비 중)')),
+                        );
                       },
                     ),
                     ListTile(

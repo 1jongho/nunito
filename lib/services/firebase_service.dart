@@ -469,4 +469,177 @@ class FirebaseService {
       print('❌ 일괄 리셋 실패: $e');
     }
   }
+
+  /// 특정 날짜의 일지 조회
+  static Future<String> getDiary(String plantId, DateTime date) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        // 익명 로그인 시도
+        await signInAnonymously();
+      }
+
+      String dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      String documentId = '${plantId}_$dateKey';
+
+      print('📖 일지 조회 시작: $documentId');
+
+      DocumentSnapshot doc =
+          await _firestore.collection('plant_diaries').doc(documentId).get();
+
+      if (doc.exists) {
+        Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+        String content = data?['content'] ?? '';
+        print('✅ 일지 조회 성공: ${content.length}자');
+        return content;
+      } else {
+        print('📝 해당 날짜의 일지가 없음');
+        return '';
+      }
+    } catch (e) {
+      print('❌ 일지 조회 실패: $e');
+      throw Exception('일지를 불러오는데 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// 일지 저장
+  static Future<void> saveDiary(
+    String plantId,
+    DateTime date,
+    String content,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        // 익명 로그인 시도
+        await signInAnonymously();
+      }
+
+      String dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      String documentId = '${plantId}_$dateKey';
+
+      print('💾 일지 저장 시작: $documentId');
+
+      await _firestore.collection('plant_diaries').doc(documentId).set({
+        'userId': _auth.currentUser?.uid,
+        'plantId': plantId,
+        'date': Timestamp.fromDate(date),
+        'content': content.trim(),
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('✅ 일지 저장 성공: ${content.length}자');
+    } catch (e) {
+      print('❌ 일지 저장 실패: $e');
+      throw Exception('일지 저장에 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// 일지 삭제
+  static Future<void> deleteDiary(String plantId, DateTime date) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        await signInAnonymously();
+      }
+
+      String dateKey =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      String documentId = '${plantId}_$dateKey';
+
+      print('🗑️ 일지 삭제 시작: $documentId');
+
+      await _firestore.collection('plant_diaries').doc(documentId).delete();
+
+      print('✅ 일지 삭제 성공');
+    } catch (e) {
+      print('❌ 일지 삭제 실패: $e');
+      throw Exception('일지 삭제에 실패했습니다: ${e.toString()}');
+    }
+  }
+
+  /// 랜덤 센서 데이터 생성 (모의 IoT 센서)
+  static Map<String, dynamic> generateRandomSensorData() {
+    final random = DateTime.now().millisecondsSinceEpoch;
+
+    // 시간에 따라 변화하는 랜덤 값들
+    int moisture = 40 + (random % 30); // 40-70%
+    int temperature = 18 + (random % 12); // 18-30°C
+    double conductivity = 1.0 + ((random % 20) / 10.0); // 1.0-3.0 mS/cm
+
+    return {
+      'moisture': moisture,
+      'temperature': temperature,
+      'conductivity': double.parse(conductivity.toStringAsFixed(1)),
+      'lastUpdated': DateTime.now(),
+    };
+  }
+
+  /// 센서 데이터 저장 (Firebase에 기록용)
+  static Future<void> saveSensorData(
+    String plantId,
+    Map<String, dynamic> sensorData,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        await signInAnonymously();
+      }
+
+      print('📊 센서 데이터 저장 시작: $plantId');
+
+      await _firestore.collection('sensor_data').add({
+        'userId': _auth.currentUser?.uid,
+        'plantId': plantId,
+        'moisture': sensorData['moisture'],
+        'temperature': sensorData['temperature'],
+        'conductivity': sensorData['conductivity'],
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ 센서 데이터 저장 성공');
+    } catch (e) {
+      print('❌ 센서 데이터 저장 실패: $e');
+      // 센서 데이터 저장 실패는 치명적이지 않으므로 예외를 던지지 않음
+    }
+  }
+
+  /// 최신 센서 데이터 조회 (현재는 사용하지 않지만 향후를 위해 유지)
+  static Future<Map<String, dynamic>?> getLatestSensorData(
+    String plantId,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        await signInAnonymously();
+      }
+
+      print('📊 최신 센서 데이터 조회 시작: $plantId');
+
+      QuerySnapshot snapshot =
+          await _firestore
+              .collection('sensor_data')
+              .where('userId', isEqualTo: _auth.currentUser?.uid)
+              .where('plantId', isEqualTo: plantId)
+              .orderBy('timestamp', descending: true)
+              .limit(1)
+              .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        Map<String, dynamic> data =
+            snapshot.docs.first.data() as Map<String, dynamic>;
+        print('✅ 최신 센서 데이터 조회 성공');
+        return data;
+      } else {
+        print('📊 센서 데이터가 없음');
+        return null;
+      }
+    } catch (e) {
+      print('❌ 센서 데이터 조회 실패: $e');
+      return null;
+    }
+  }
 }
