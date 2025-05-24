@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/screens/plantalarmScreen.dart';
+import 'package:nunito/services/notification_service.dart';
 import 'dart:async';
 
 class PlantDetailMyScreen extends StatefulWidget {
@@ -72,17 +73,144 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   void _startSensorDataTimer() {
     _sensorUpdateTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
+        // 새로운 센서 데이터 생성
+        Map<String, dynamic> newSensorData =
+            FirebaseService.generateRandomSensorData();
+
         setState(() {
-          _sensorData = FirebaseService.generateRandomSensorData();
+          _sensorData = newSensorData;
         });
 
-        // 선택적으로 Firebase에 센서 데이터 기록 (매번 저장하지 않도록 조건 추가)
+        // 🔔 센서 데이터 업데이트 시마다 알림 확인
+        _checkAndSendAlerts(newSensorData);
+
+        // Firebase에 센서 데이터 기록 (5분마다)
         if (DateTime.now().minute % 5 == 0) {
-          // 5분마다만 Firebase에 저장
           _saveSensorDataToFirebase();
         }
       }
     });
+  }
+
+  // 🔔 알림 확인 및 발송
+  void _checkAndSendAlerts(Map<String, dynamic> sensorData) {
+    try {
+      // 알림 설정 가져오기
+      Map<String, dynamic>? alarmSettings = widget.plant['alarmSettings'];
+      if (alarmSettings == null) {
+        print('⚠️ 알림 설정이 없습니다.');
+        return;
+      }
+
+      String plantName = widget.plant['nickname'] ?? '내 식물';
+      String plantId = widget.plant['id'] ?? '';
+
+      print('🔍 [$plantName] 알림 상태 확인 중...');
+
+      // 수분 알림 확인
+      final moistureAlarm = alarmSettings['moistureAlarm'];
+      if (moistureAlarm != null && (moistureAlarm['enabled'] ?? false)) {
+        int currentMoisture = sensorData['moisture'] ?? 50;
+        int targetMoisture = moistureAlarm['value'] ?? 30;
+
+        print('💧 수분 체크: $currentMoisture% (목표: $targetMoisture%)');
+
+        if (currentMoisture < targetMoisture) {
+          print('🚨 수분 부족 감지!');
+          _sendAlertIfNeeded('${plantId}_moisture', () {
+            NotificationService.showPlantAlert(
+              plantName,
+              '💧 수분이 부족합니다! (현재: $currentMoisture%, 목표: $targetMoisture%)',
+            );
+          });
+        } else {
+          print('✅ 수분 정상');
+        }
+      } else {
+        print('🔇 수분 알림 비활성화');
+      }
+
+      // 온도 알림 확인
+      final temperatureAlarm = alarmSettings['temperatureAlarm'];
+      if (temperatureAlarm != null && (temperatureAlarm['enabled'] ?? false)) {
+        int currentTemp = sensorData['temperature'] ?? 22;
+        int targetTemp = temperatureAlarm['value'] ?? 22;
+
+        print('🌡️ 온도 체크: $currentTemp°C (목표: $targetTemp°C)');
+
+        if (currentTemp > targetTemp + 3) {
+          print('🚨 온도 과열 감지!');
+          _sendAlertIfNeeded('${plantId}_temperature_hot', () {
+            NotificationService.showPlantAlert(
+              plantName,
+              '🔥 온도가 너무 높습니다! (현재: $currentTemp°C, 목표: $targetTemp°C)',
+            );
+          });
+        } else if (currentTemp < targetTemp - 3) {
+          print('🚨 온도 과냉 감지!');
+          _sendAlertIfNeeded('${plantId}_temperature_cold', () {
+            NotificationService.showPlantAlert(
+              plantName,
+              '🧊 온도가 너무 낮습니다! (현재: $currentTemp°C, 목표: $targetTemp°C)',
+            );
+          });
+        } else {
+          print('✅ 온도 정상');
+        }
+      } else {
+        print('🔇 온도 알림 비활성화');
+      }
+
+      // 전도도 알림 확인
+      final conductivityAlarm = alarmSettings['conductivityAlarm'];
+      if (conductivityAlarm != null &&
+          (conductivityAlarm['enabled'] ?? false)) {
+        double currentCond = sensorData['conductivity'] ?? 1.5;
+        int targetCond = conductivityAlarm['value'] ?? 3;
+
+        print('⚡ 전도도 체크: $currentCond mS/cm (목표: $targetCond mS/cm)');
+
+        if (currentCond > targetCond + 1.0) {
+          print('🚨 전도도 과다 감지!');
+          _sendAlertIfNeeded('${plantId}_conductivity_high', () {
+            NotificationService.showPlantAlert(
+              plantName,
+              '⚡ 전도도가 너무 높습니다! (현재: $currentCond mS/cm, 목표: $targetCond mS/cm)',
+            );
+          });
+        } else if (currentCond < targetCond - 1.0) {
+          print('🚨 전도도 부족 감지!');
+          _sendAlertIfNeeded('${plantId}_conductivity_low', () {
+            NotificationService.showPlantAlert(
+              plantName,
+              '🌱 전도도가 너무 낮습니다! (현재: $currentCond mS/cm, 목표: $targetCond mS/cm)',
+            );
+          });
+        } else {
+          print('✅ 전도도 정상');
+        }
+      } else {
+        print('🔇 전도도 알림 비활성화');
+      }
+    } catch (e) {
+      print('❌ 알림 확인 실패: $e');
+    }
+  }
+
+  // 알림 스팸 방지 (같은 알림 5분 쿨다운)
+  final Map<String, DateTime> _lastAlertTime = {};
+
+  void _sendAlertIfNeeded(String alertType, VoidCallback sendAlert) {
+    DateTime now = DateTime.now();
+    DateTime? lastTime = _lastAlertTime[alertType];
+
+    if (lastTime == null || now.difference(lastTime).inMinutes >= 1) {
+      sendAlert();
+      _lastAlertTime[alertType] = now;
+      print('🔔 알림 발송: $alertType');
+    } else {
+      print('⏳ 알림 쿨다운 중: $alertType');
+    }
   }
 
   Future<void> _incrementViewCount() async {

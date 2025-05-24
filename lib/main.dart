@@ -5,6 +5,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:nunito/screens/introScreen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:nunito/services/firebase_service.dart';
+import 'package:nunito/services/notification_service.dart';
+import 'package:nunito/services/plant_monitor_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +23,12 @@ void main() async {
     print('✅ 익명 인증 초기화 성공!');
     await FirebaseService.checkAndResetAllPlants();
     print('✅ 주간 조회수 리셋 체크 완료!');
+    // 알림 서비스 초기화
+    await NotificationService.initialize();
+    print('✅ 알림 서비스 초기화 성공!');
+    // 식물 모니터링 시작
+    PlantMonitorService.startMonitoring();
+    print('✅ 식물 모니터링 시작!');
   } catch (e) {
     print('❌ Firebase 초기화 실패: $e');
   }

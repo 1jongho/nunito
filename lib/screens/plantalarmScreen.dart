@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/widgets/modal/alarm.dart';
 import 'package:nunito/widgets/switch.dart';
 import 'package:nunito/services/firebase_service.dart';
+import 'package:nunito/services/notification_service.dart'; // 수정
 
 class PlantAlarmScreen extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -151,6 +152,86 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
     }
   }
 
+  // 테스트 알림 발송
+  Future<void> _sendTestNotification() async {
+    try {
+      // 즉시 테스트 알림 발송
+      await NotificationService.showNotification(
+        id: 999,
+        title: '🧪 즉시 테스트 알림',
+        body:
+            '알림이 정상 작동합니다! 시간: ${DateTime.now().toString().substring(11, 19)}',
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '즉시 테스트 알림이 발송되었습니다!',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Color(0xFF0BB57F),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      print('테스트 알림 발송 실패: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '테스트 알림 발송에 실패했습니다.',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // 연속 알림 테스트
+  Future<void> _sendMultipleTestNotifications() async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '3개의 연속 알림을 발송합니다...',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // 3개의 연속 알림 발송 (1초 간격)
+      for (int i = 1; i <= 3; i++) {
+        await NotificationService.showNotification(
+          id: 900 + i,
+          title: '🔔 연속 테스트 $i/3',
+          body: '$i번째 알림입니다. ${DateTime.now().toString().substring(11, 19)}',
+        );
+
+        if (i < 3) {
+          await Future.delayed(Duration(seconds: 1));
+        }
+      }
+
+      // 앱을 백그라운드로 보내라는 안내
+      await Future.delayed(Duration(seconds: 1));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '홈 버튼을 눌러 앱을 백그라운드로 보내보세요!',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      print('연속 알림 발송 실패: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,7 +345,59 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
                 ),
               ),
 
-              SizedBox(height: 40),
+              SizedBox(height: 32),
+
+              // 테스트 알림 버튼 추가
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _sendTestNotification,
+                  icon: Icon(Icons.notifications_active, size: 20),
+                  label: Text(
+                    '즉시 알림 테스트',
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 16),
+
+              // 연속 알림 테스트 버튼 추가
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _sendMultipleTestNotifications,
+                  icon: Icon(Icons.notifications, size: 20),
+                  label: Text(
+                    '연속 알림 테스트 (3개)',
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 32),
 
               // 알림 설정 목록
               Column(
