@@ -1,5 +1,5 @@
 name: nunito
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 version: 1.0.0+1
 
 environment:
@@ -22,8 +22,11 @@ dependencies:
   image_picker: ^1.1.2
   device_info_plus: ^11.4.0
 
+  flutter_local_notifications: ^17.2.2
+  permission_handler: ^11.3.1
+
 dev_dependencies:
-  flutter_launcher_icons: "^0.14.3"
+  flutter_launcher_icons: '^0.14.3'
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
@@ -31,8 +34,8 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icon/icon.png"
-  adaptive_icon_background: "#FFFFFF"
+  image_path: 'assets/icon/icon.png'
+  adaptive_icon_background: '#FFFFFF'
   remove_alpha_ios: true
   min_sdk_android: 21
 
