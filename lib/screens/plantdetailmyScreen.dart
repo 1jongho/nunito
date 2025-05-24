@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/services/firebase_service.dart';
+import 'package:nunito/screens/plantalarmScreen.dart';
 import 'dart:async';
 
 class PlantDetailMyScreen extends StatefulWidget {
@@ -279,10 +280,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                 size: 20,
               ),
               onPressed: () {
-                // TODO: 알림 설정 페이지로 이동
-                ScaffoldMessenger.of(
+                // 알림 설정 페이지로 이동
+                Navigator.push(
                   context,
-                ).showSnackBar(SnackBar(content: Text('알림 설정 페이지 (준비 중)')));
+                  MaterialPageRoute(
+                    builder: (context) => PlantAlarmScreen(plant: widget.plant),
+                  ),
+                );
               },
             ),
           ),

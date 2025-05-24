@@ -1034,4 +1034,66 @@ class FirebaseService {
       throw Exception('마이그레이션에 실패했습니다: ${e.toString()}');
     }
   }
+
+  static Future<void> updatePlantAlarmSettings(
+    String plantId,
+    Map<String, dynamic> alarmSettings,
+  ) async {
+    try {
+      print('🔔 알림 설정 업데이트 시작: $plantId');
+
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('로그인이 필요합니다.');
+      }
+
+      // 문서 존재 여부 확인
+      DocumentSnapshot doc = await _firestore
+          .collection('my_plants')
+          .doc(plantId)
+          .get()
+          .timeout(Duration(seconds: 10));
+
+      if (!doc.exists) {
+        throw Exception('업데이트하려는 식물을 찾을 수 없습니다.');
+      }
+
+      // 권한 확인 (본인의 식물인지)
+      Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+      if (data?['userId'] != user.uid) {
+        throw Exception('이 식물의 알림 설정을 변경할 권한이 없습니다.');
+      }
+
+      // 알림 설정 업데이트
+      await _firestore
+          .collection('my_plants')
+          .doc(plantId)
+          .update({
+            'alarmSettings': alarmSettings,
+            'updatedAt': FieldValue.serverTimestamp(),
+          })
+          .timeout(Duration(seconds: 10));
+
+      print('✅ 알림 설정 업데이트 완료');
+    } catch (e) {
+      print('❌ 알림 설정 업데이트 실패: $e');
+
+      if (e is TimeoutException) {
+        throw Exception('알림 설정 업데이트가 시간 초과되었습니다. 네트워크 연결을 확인해주세요.');
+      } else if (e is FirebaseException) {
+        switch (e.code) {
+          case 'permission-denied':
+            throw Exception('알림 설정 변경 권한이 없습니다.');
+          case 'not-found':
+            throw Exception('업데이트하려는 식물을 찾을 수 없습니다.');
+          case 'unavailable':
+            throw Exception('Firebase 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+          default:
+            throw Exception('알림 설정 업데이트 중 오류가 발생했습니다: ${e.message}');
+        }
+      } else {
+        throw Exception('알림 설정 업데이트에 실패했습니다: ${e.toString()}');
+      }
+    }
+  }
 }
