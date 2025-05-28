@@ -934,18 +934,19 @@ class FirebaseService {
         await signInAnonymously();
       }
 
-      print('📊 센서 데이터 저장 시작: $plantId');
+      print('📊 센서 데이터 저장/업데이트 시작: $plantId');
 
-      await _firestore.collection('sensor_data').add({
+      // 🔑 핵심 변경: add() 대신 doc(plantId).set() 사용
+      await _firestore.collection('sensor_data').doc(plantId).set({
         'userId': _auth.currentUser?.uid,
         'plantId': plantId,
         'moisture': sensorData['moisture'],
         'temperature': sensorData['temperature'],
         'conductivity': sensorData['conductivity'],
         'timestamp': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true)); // 기존 데이터 유지하면서 업데이트
 
-      print('✅ 센서 데이터 저장 성공');
+      print('✅ 센서 데이터 저장/업데이트 성공');
     } catch (e) {
       print('❌ 센서 데이터 저장 실패: $e');
       // 센서 데이터 저장 실패는 치명적이지 않으므로 예외를 던지지 않음
