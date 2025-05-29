@@ -755,10 +755,8 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
 
     // API 데이터가 있으면 그것을 사용, 없으면 기본값 사용
     if (seasonGuide.isNotEmpty) {
-      print('✅ $season 가이드 API 데이터 사용: "$seasonGuide"');
       return seasonGuide;
     } else {
-      print('⚠️ $season 가이드 API 데이터 없음, 기본값 사용');
       return defaultGuides[season] ?? '정보가 없습니다.';
     }
   }

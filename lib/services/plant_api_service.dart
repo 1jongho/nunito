@@ -29,7 +29,6 @@ class PlantApiService {
     final response = await http.get(Uri.parse(url));
 
     print('API 응답 상태 코드: ${response.statusCode}'); // 상태 코드 출력
-    print('API 응답 내용: ${response.body.substring(0, 200)}...'); // 응답 데이터 일부 출력
 
     if (response.statusCode == 200) {
       final document = xml.XmlDocument.parse(response.body);
@@ -44,7 +43,7 @@ class PlantApiService {
         );
       }).toList();
     } else {
-      throw Exception('Failed to load plants');
+      throw Exception('식물 정보를 불러오지 못했습니다.');
     }
   }
 
@@ -61,11 +60,6 @@ class PlantApiService {
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      // 디버깅: API 응답 출력
-      print('=== gardenDtl API 응답 ===');
-      print('응답 데이터: ${response.body}');
-      print('========================');
-
       final document = xml.XmlDocument.parse(response.body);
       final item = document.findAllElements('item').first;
 

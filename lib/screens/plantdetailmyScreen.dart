@@ -105,27 +105,19 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       String plantName = widget.plant['nickname'] ?? '내 식물';
       String plantId = widget.plant['id'] ?? '';
 
-      print('🔍 [$plantName] 알림 상태 확인 중...');
-
       // 수분 알림 확인
       final moistureAlarm = alarmSettings['moistureAlarm'];
       if (moistureAlarm != null && (moistureAlarm['enabled'] ?? false)) {
         int currentMoisture = sensorData['moisture'] ?? 50;
         int targetMoisture = moistureAlarm['value'] ?? 30;
-
-        print('💧 수분 체크: $currentMoisture% (목표: $targetMoisture%)');
-
         if (currentMoisture < targetMoisture) {
-          print('🚨 수분 부족 감지!');
           _sendAlertIfNeeded('${plantId}_moisture', () {
             NotificationService.showPlantAlert(
               plantName,
               '💧 수분이 부족합니다! (현재: $currentMoisture%, 목표: $targetMoisture%)',
             );
           });
-        } else {
-          print('✅ 수분 정상');
-        }
+        } else {}
       } else {
         print('🔇 수분 알림 비활성화');
       }
@@ -135,11 +127,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       if (temperatureAlarm != null && (temperatureAlarm['enabled'] ?? false)) {
         int currentTemp = sensorData['temperature'] ?? 22;
         int targetTemp = temperatureAlarm['value'] ?? 22;
-
-        print('🌡️ 온도 체크: $currentTemp°C (목표: $targetTemp°C)');
-
         if (currentTemp > targetTemp + 3) {
-          print('🚨 온도 과열 감지!');
           _sendAlertIfNeeded('${plantId}_temperature_hot', () {
             NotificationService.showPlantAlert(
               plantName,
@@ -147,16 +135,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
             );
           });
         } else if (currentTemp < targetTemp - 3) {
-          print('🚨 온도 과냉 감지!');
           _sendAlertIfNeeded('${plantId}_temperature_cold', () {
             NotificationService.showPlantAlert(
               plantName,
               '🧊 온도가 너무 낮습니다! (현재: $currentTemp°C, 목표: $targetTemp°C)',
             );
           });
-        } else {
-          print('✅ 온도 정상');
-        }
+        } else {}
       } else {
         print('🔇 온도 알림 비활성화');
       }
@@ -167,11 +152,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
           (conductivityAlarm['enabled'] ?? false)) {
         double currentCond = sensorData['conductivity'] ?? 1.5;
         int targetCond = conductivityAlarm['value'] ?? 3;
-
-        print('⚡ 전도도 체크: $currentCond mS/cm (목표: $targetCond mS/cm)');
-
         if (currentCond > targetCond + 1.0) {
-          print('🚨 전도도 과다 감지!');
           _sendAlertIfNeeded('${plantId}_conductivity_high', () {
             NotificationService.showPlantAlert(
               plantName,
@@ -179,16 +160,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
             );
           });
         } else if (currentCond < targetCond - 1.0) {
-          print('🚨 전도도 부족 감지!');
           _sendAlertIfNeeded('${plantId}_conductivity_low', () {
             NotificationService.showPlantAlert(
               plantName,
               '🌱 전도도가 너무 낮습니다! (현재: $currentCond mS/cm, 목표: $targetCond mS/cm)',
             );
           });
-        } else {
-          print('✅ 전도도 정상');
-        }
+        } else {}
       } else {
         print('🔇 전도도 알림 비활성화');
       }
@@ -207,10 +185,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     if (lastTime == null || now.difference(lastTime).inMinutes >= 1) {
       sendAlert();
       _lastAlertTime[alertType] = now;
-      print('🔔 알림 발송: $alertType');
-    } else {
-      print('⏳ 알림 쿨다운 중: $alertType');
-    }
+    } else {}
   }
 
   Future<void> _incrementViewCount() async {
@@ -218,12 +193,9 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       final plantId = widget.plant['id'];
       if (plantId != null) {
         await FirebaseService.incrementPlantViewCount(plantId);
-        print('✅ 조회수 증가 완료: $plantId');
+        print('클릭한 식물 ID: $plantId');
       }
-    } catch (e) {
-      print('❌ 조회수 증가 실패: $e');
-      // 조회수 증가 실패는 사용자에게 알리지 않음 (백그라운드 작업)
-    }
+    } catch (e) {}
   }
 
   // Firebase에 센서 데이터 저장 (선택적)

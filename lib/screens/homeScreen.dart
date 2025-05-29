@@ -90,20 +90,14 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentPage = _myPlants.length - 1;
         }
       });
-
-      print(
-        '✅ 홈 화면 식물 로드 완료: ${popularPlants.length}개 (전체: ${allPlants.length}개)',
-      );
-      print('📊 조회수 기준 정렬');
-
-      // 디버깅: 선택된 식물들의 정보 출력
       for (int i = 0; i < popularPlants.length; i++) {
         final plant = popularPlants[i];
         final viewCount = plant['viewCount'] ?? 0;
         final updatedAt = plant['updatedAt'] as Timestamp?;
-        print(
+        // 사용자가 홈화면으로 이동할 시, 조회수 순위를 출력. (임시 주석 처리)
+        /*print(
           '${i + 1}. ${plant['nickname']} - 조회수: $viewCount회, 업데이트: ${updatedAt?.toDate()}',
-        );
+        );*/
       }
     } catch (e) {
       setState(() {
