@@ -39,16 +39,8 @@ class FirebaseService {
 
       final user = _auth.currentUser;
       if (user == null) {
-        print('❌ 사용자가 로그인되지 않음');
         return {'isAuthenticated': false, 'error': '사용자가 로그인되지 않음'};
       }
-
-      print('✅ 사용자 인증 상태:');
-      print('  - UID: ${user.uid}');
-      print('  - 익명: ${user.isAnonymous}');
-      print('  - 생성일: ${user.metadata.creationTime}');
-      print('  - 마지막 로그인: ${user.metadata.lastSignInTime}');
-
       return {
         'isAuthenticated': true,
         'uid': user.uid,
@@ -115,17 +107,12 @@ class FirebaseService {
         'testTime': FieldValue.serverTimestamp(),
       });
 
-      print('✅ 문서 생성 권한 정상');
-
       // 테스트 문서 읽기 시도
       DocumentSnapshot snapshot = await testDoc.get();
-      if (snapshot.exists) {
-        print('✅ 문서 읽기 권한 정상');
-      }
+      if (snapshot.exists) {}
 
       // 테스트 문서 삭제
       await testDoc.delete();
-      print('✅ 문서 삭제 권한 정상');
 
       return true;
     } catch (e) {
@@ -143,26 +130,17 @@ class FirebaseService {
   /// 내 식물 목록 조회 (강화된 디버깅)
   static Future<List<Map<String, dynamic>>> getMyPlants() async {
     try {
-      print('🔍 내 식물 목록 조회 시작...');
-
       final user = _auth.currentUser;
       if (user == null) {
         print('❌ 사용자가 로그인되지 않음');
         throw Exception('로그인이 필요합니다. 앱을 재시작해주세요.');
       }
 
-      print('✅ 사용자 확인: ${user.uid}');
-
-      // orderBy 없이 쿼리 (인덱스 불필요)
-      print('🔄 Firestore 쿼리 실행 중 (orderBy 제거)...');
       QuerySnapshot snapshot =
           await _firestore
               .collection('my_plants')
               .where('userId', isEqualTo: user.uid)
               .get(); // orderBy 제거
-
-      print('✅ 쿼리 실행 완료');
-      print('📊 조회된 문서 수: ${snapshot.docs.length}');
 
       // 데이터 변환 후 앱에서 정렬
       List<Map<String, dynamic>> plants = [];
@@ -171,10 +149,7 @@ class FirebaseService {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           data['id'] = doc.id;
           plants.add(data);
-          print('✅ 문서 변환 완료: ${doc.id}');
-        } catch (e) {
-          print('❌ 문서 변환 실패 (${doc.id}): $e');
-        }
+        } catch (e) {}
       }
 
       // 앱에서 수동 정렬 (createdAt 기준 내림차순)
@@ -193,8 +168,6 @@ class FirebaseService {
           return 0;
         }
       });
-
-      print('✅ 최종 반환 데이터 수: ${plants.length}');
       return plants;
     } catch (e) {
       print('❌ 식물 목록 조회 중 오류 발생: $e');
@@ -225,15 +198,13 @@ class FirebaseService {
   /// 실시간 스트림 (강화된 오류 처리)
   static Stream<List<Map<String, dynamic>>> getMyPlantsStream() async* {
     try {
-      print('🔍 실시간 스트림 생성 시작...');
-
       final user = _auth.currentUser;
       if (user == null) {
         print('❌ 스트림 생성 실패: 사용자가 로그인되지 않음');
         throw Exception('로그인이 필요합니다.');
       }
 
-      print('✅ 스트림 사용자 확인: ${user.uid}');
+      print('내 식물을 조회한 ID: ${user.uid}');
 
       yield* _firestore
           .collection('my_plants')
@@ -241,8 +212,6 @@ class FirebaseService {
           // .orderBy('createdAt', descending: true) // 임시로 제거
           .snapshots()
           .map((snapshot) {
-            print('📊 스트림 업데이트: ${snapshot.docs.length}개 문서');
-
             List<Map<String, dynamic>> plants =
                 snapshot.docs.map((doc) {
                   Map<String, dynamic> data = doc.data();
@@ -675,7 +644,6 @@ class FirebaseService {
       }
 
       await batch.commit();
-      print('✅ 만료된 식물들의 조회수 리셋 완료');
     } catch (e) {
       print('❌ 일괄 리셋 실패: $e');
     }
@@ -688,9 +656,6 @@ class FirebaseService {
       if (user == null) {
         await signInAnonymously();
       }
-
-      print('📊 조회수 증가 시작: $plantId');
-
       DocumentReference plantRef = _firestore
           .collection('my_plants')
           .doc(plantId);
@@ -730,8 +695,6 @@ class FirebaseService {
         }
 
         transaction.update(plantRef, updateData);
-
-        print('✅ 조회수 업데이트: ${needsReset ? 1 : currentViewCount + 1}');
       });
     } catch (e) {
       print('❌ 조회수 증가 실패: $e');
@@ -823,13 +786,9 @@ class FirebaseService {
         // 익명 로그인 시도
         await signInAnonymously();
       }
-
       String dateKey =
           '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       String documentId = '${plantId}_$dateKey';
-
-      print('📖 일지 조회 시작: $documentId');
-
       DocumentSnapshot doc =
           await _firestore.collection('plant_diaries').doc(documentId).get();
 
@@ -839,7 +798,6 @@ class FirebaseService {
         print('✅ 일지 조회 성공: ${content.length}자');
         return content;
       } else {
-        print('📝 해당 날짜의 일지가 없음');
         return '';
       }
     } catch (e) {
@@ -933,9 +891,6 @@ class FirebaseService {
       if (user == null) {
         await signInAnonymously();
       }
-
-      print('📊 센서 데이터 저장/업데이트 시작: $plantId');
-
       // 🔑 핵심 변경: add() 대신 doc(plantId).set() 사용
       await _firestore.collection('sensor_data').doc(plantId).set({
         'userId': _auth.currentUser?.uid,
@@ -945,12 +900,7 @@ class FirebaseService {
         'conductivity': sensorData['conductivity'],
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true)); // 기존 데이터 유지하면서 업데이트
-
-      print('✅ 센서 데이터 저장/업데이트 성공');
-    } catch (e) {
-      print('❌ 센서 데이터 저장 실패: $e');
-      // 센서 데이터 저장 실패는 치명적이지 않으므로 예외를 던지지 않음
-    }
+    } catch (e) {}
   }
 
   /// 최신 센서 데이터 조회 (현재는 사용하지 않지만 향후를 위해 유지)

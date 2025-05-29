@@ -171,9 +171,7 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      print('📤 알림 발송 시도: $title');
       await _notifications.show(id, title, body, details);
-      print('✅ 알림 발송 완료: $title');
 
       // 발송 후 잠시 대기
       await Future.delayed(Duration(milliseconds: 100));
