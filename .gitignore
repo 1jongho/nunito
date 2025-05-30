@@ -73,6 +73,7 @@ lib/firebase_options.dart
 **/ios/**/xcuserdata
 **/ios/**/.generated/
 **/ios/**/Flutter/ephemeral/
+**/ios/Runner.xcodeproj/project.pbxproj
 
 # macOS related
 **/macos/Pods/
