@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/screens/homeScreen.dart';
 import 'package:nunito/screens/plantbookScreen.dart';
-import 'package:nunito/screens/recommendScreen.dart';
+import 'package:nunito/screens/recommendintroScreen.dart';
 
 class CustomNavigationBar extends StatefulWidget {
   final int currentIndex;
@@ -46,7 +46,7 @@ class _CustomNavigationBarState extends State<CustomNavigationBar> {
         PageRouteBuilder(
           pageBuilder:
               (context, animation, secondaryAnimation) =>
-                  PlantRecommendScreen(),
+                  PlantRecommendIntroScreen(),
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
         ),
