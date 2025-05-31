@@ -74,5 +74,17 @@
 	<key>NSUserNotificationAlertStyle</key>
 	<string>alert</string>
 	
+	<!-- 블루투스 권한 (iOS 13 이상) -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>식물 센서와 블루투스 연결을 위해 필요합니다.</string>
+
+	<!-- 블루투스 권한 (iOS 12 이하 호환) -->
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>센서 데이터를 받기 위해 블루투스가 필요합니다.</string>
+
+	<!-- 위치 권한 (BLE 스캔에 필요할 수 있음) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>블루투스 기기 검색을 위해 위치 권한이 필요합니다.</string>
+
 </dict>
 </plist>

@@ -3,6 +3,7 @@ import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:nunito/screens/homeScreen.dart';
 import 'package:nunito/screens/plantdetailmyScreen.dart';
+import 'package:nunito/screens/bluetoothconnectionScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async'; // TimeoutException 사용을 위해 추가
 
@@ -26,88 +27,30 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
     return FirebaseService.getMyPlantsStream();
   }
 
-  // 블루투스 연결 (Firebase 상태 업데이트 포함)
-  Future<void> _connectBluetooth(String plantId, String plantName) async {
-    // 연결 중 모달 표시
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _ThreeDotsAnimation(),
-                SizedBox(height: 16),
-                Text(
-                  '블루투스 연결 중...',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'Pretendard',
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  '"$plantName" 와(과) 연결을 시도하고 있습니다.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontFamily: 'Pretendard',
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  // 블루투스 연결 화면으로 이동
+  Future<void> _connectBluetooth(
+    String plantId,
+    String plantName,
+    Map<String, dynamic> plant,
+  ) async {
+    // 블루투스 연결 화면으로 이동
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BluetoothConnectionScreen(plant: plant),
+      ),
     );
 
-    try {
-      // 5초 대기 (블루투스 연결 시뮬레이션)
-      await Future.delayed(Duration(seconds: 5));
-
-      // Firebase에 블루투스 연결 상태 업데이트
-      await FirebaseService.updateBluetoothConnection(
-        plantId: plantId,
-        isConnected: true,
-        deviceId:
-            'BT_${plantId}_${DateTime.now().millisecondsSinceEpoch}', // 시뮬레이션용 기기 ID
-      );
-
-      // 모달 닫기
-      Navigator.of(context).pop();
-
-      // 연결 완료 스낵바
+    // 연결 성공 시 결과 처리
+    if (result == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '"$plantName" 와(과) 블루투스 연결이 완료되었습니다.',
+            '"$plantName" 블루투스 연결이 완료되었습니다.',
             style: TextStyle(fontFamily: 'Pretendard'),
           ),
           backgroundColor: Color(0xFF0BB57F),
           duration: Duration(seconds: 2),
-        ),
-      );
-    } catch (e) {
-      // 모달 닫기
-      Navigator.of(context).pop();
-
-      // 오류 메시지
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '블루투스 연결에 실패했습니다: ${e.toString()}',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
         ),
       );
     }
@@ -558,7 +501,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
             child: IconButton(
               onPressed: () {
                 if (!isBluetoothConnected) {
-                  _connectBluetooth(plantId, plant['nickname'] ?? '식물');
+                  _connectBluetooth(plantId, plant['nickname'] ?? '식물', plant);
                 } else {
                   _showDisconnectConfirmDialog(
                     plantId,
