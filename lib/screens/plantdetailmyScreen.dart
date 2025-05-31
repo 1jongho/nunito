@@ -73,20 +73,31 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   void _startSensorDataTimer() {
     _sensorUpdateTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
-        // 새로운 센서 데이터 생성
-        Map<String, dynamic> newSensorData =
-            FirebaseService.generateRandomSensorData();
+        // 🔑 블루투스 연결 상태 확인
+        bool isBluetoothConnected =
+            widget.plant['isBluetoothConnected'] ?? false;
 
-        setState(() {
-          _sensorData = newSensorData;
-        });
+        if (isBluetoothConnected) {
+          // 블루투스가 연결된 경우에만 센서 데이터 업데이트
+          Map<String, dynamic> newSensorData =
+              FirebaseService.generateRandomSensorData();
 
-        // 🔔 센서 데이터 업데이트 시마다 알림 확인
-        _checkAndSendAlerts(newSensorData);
+          setState(() {
+            _sensorData = newSensorData;
+          });
 
-        // Firebase에 센서 데이터 기록 (5분마다)
-        if (DateTime.now().minute % 5 == 0) {
-          _saveSensorDataToFirebase();
+          // 🔔 센서 데이터 업데이트 시마다 알림 확인
+          _checkAndSendAlerts(newSensorData);
+
+          // Firebase에 센서 데이터 기록 (5분마다)
+          if (DateTime.now().minute % 5 == 0) {
+            _saveSensorDataToFirebase();
+          }
+        } else {
+          // 블루투스가 연결되지 않은 경우 마지막 업데이트 시간만 갱신
+          setState(() {
+            _sensorData['lastUpdated'] = DateTime.now();
+          });
         }
       }
     });
@@ -281,8 +292,26 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
 
   // 센서 데이터 수동 새로고침
   void _refreshSensorData() {
+    // 🔑 블루투스 연결 상태 확인
+    bool isBluetoothConnected = widget.plant['isBluetoothConnected'] ?? false;
+
+    if (!isBluetoothConnected) {
+      // 블루투스가 연결되지 않은 경우 경고 메시지
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '블루투스가 연결되지 않았습니다. 센서 데이터를 받을 수 없습니다.',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      // 기존의 랜덤 데이터 대신 정상 수치로 설정
+      // 블루투스가 연결된 경우에만 정상 수치로 설정
       _sensorData = _generateNormalSensorData();
     });
 
@@ -290,7 +319,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '센서 데이터가 정상 수치로 조정되었습니다.',
+          '센서 데이터가 새로고침되었습니다.',
           style: TextStyle(fontFamily: 'Pretendard'),
         ),
         backgroundColor: Color(0xFF0BB57F),
@@ -553,7 +582,10 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                         ),
                       ),
                       Spacer(),
-                      // 새로고침 버튼 추가
+                      // 블루투스 연결 상태 표시 추가
+                      _buildBluetoothStatusIndicator(),
+                      SizedBox(width: 8),
+                      // 새로고침 버튼
                       InkWell(
                         onTap: _refreshSensorData,
                         child: Container(
@@ -583,18 +615,33 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                     ],
                   ),
                   SizedBox(height: 8),
-                  // 마지막 업데이트 시간 표시
-                  Text(
-                    '마지막 업데이트: ${DateFormat('HH:mm:ss').format(_sensorData['lastUpdated'])}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[500],
-                      fontFamily: 'Pretendard',
-                    ),
+                  // 마지막 업데이트 시간과 블루투스 상태 메시지
+                  Row(
+                    children: [
+                      Text(
+                        '마지막 업데이트: ${DateFormat('HH:mm:ss').format(_sensorData['lastUpdated'])}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                          fontFamily: 'Pretendard',
+                        ),
+                      ),
+                      Spacer(),
+                      if (!(widget.plant['isBluetoothConnected'] ?? false))
+                        Text(
+                          '블루투스 연결 필요',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.orange,
+                            fontFamily: 'Pretendard',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
                   ),
                   SizedBox(height: 16),
 
-                  // 센서 데이터
+                  // 센서 데이터 (기존과 동일)
                   Row(
                     children: [
                       Expanded(
@@ -791,6 +838,45 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBluetoothStatusIndicator() {
+    bool isBluetoothConnected = widget.plant['isBluetoothConnected'] ?? false;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color:
+            isBluetoothConnected
+                ? Color(0xFF0BB57F).withOpacity(0.1)
+                : Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isBluetoothConnected ? Icons.bluetooth : Icons.bluetooth_disabled,
+            size: 14,
+            color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+          ),
+          SizedBox(width: 4),
+          Text(
+            isBluetoothConnected ? '연결됨' : '연결 안됨',
+            style: TextStyle(
+              fontSize: 12,
+              color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+              fontFamily: 'Pretendard',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
