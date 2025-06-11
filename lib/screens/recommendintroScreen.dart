@@ -179,12 +179,12 @@ class _PlantRecommendIntroScreenState extends State<PlantRecommendIntroScreen>
                     // "나만의 식물 추천받기" 텍스트
                     _buildTitleText(),
 
-                    SizedBox(height: 180),
+                    SizedBox(height: 300),
 
                     // 화살표와 클릭 버튼이 있는 영역
                     _buildInteractionArea(),
 
-                    SizedBox(height: 30),
+                    SizedBox(height: 20),
 
                     // 안내 텍스트
                     Text(
