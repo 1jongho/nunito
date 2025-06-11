@@ -5,6 +5,7 @@ import 'package:nunito/screens/homeScreen.dart';
 import 'package:nunito/screens/plantdetailmyScreen.dart';
 import 'package:nunito/screens/bluetoothconnectionScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nunito/services/bluetooth_service.dart';
 import 'dart:async'; // TimeoutException 사용을 위해 추가
 
 class PlantMyScreen extends StatefulWidget {
@@ -112,7 +113,10 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
   // 블루투스 연결 해제 (Firebase 상태 업데이트 포함)
   Future<void> _disconnectBluetooth(String plantId, String plantName) async {
     try {
-      // Firebase에 블루투스 연결 해제 상태 업데이트
+      // 🔧 1. 실제 블루투스 연결 해제 먼저!
+      await BluetoothServiceManager.disconnect(); // ← 이 줄 추가!
+
+      // 🔧 2. Firebase에 블루투스 연결 해제 상태 업데이트
       await FirebaseService.updateBluetoothConnection(
         plantId: plantId,
         isConnected: false,

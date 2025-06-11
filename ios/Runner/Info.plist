@@ -31,8 +31,27 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>식물 센서와 블루투스 연결을 위해 필요합니다.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>센서 데이터를 받기 위해 블루투스가 필요합니다.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>식물 사진을 촬영하기 위해 카메라 권한이 필요합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>블루투스 기기 검색을 위해 위치 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>식물 사진을 선택하기 위해 사진 라이브러리 권한이 필요합니다.</string>
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>식물 관리 알림을 받기 위해 알림 권한이 필요합니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-processing</string>
+		<string>background-fetch</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -50,41 +69,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	
-	<!-- 기존 권한 설명들 -->
-	<key>NSCameraUsageDescription</key>
-	<string>식물 사진을 촬영하기 위해 카메라 권한이 필요합니다.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>식물 사진을 선택하기 위해 사진 라이브러리 권한이 필요합니다.</string>
-	
-	<!-- ===== 알림 관련 권한 추가 ===== -->
-	
-	<!-- 알림 권한 설명 -->
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>식물 관리 알림을 받기 위해 알림 권한이 필요합니다.</string>
-	
-	<!-- 백그라운드 모드 허용 (알림 처리용) -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>background-processing</string>
-		<string>background-fetch</string>
-	</array>
-	
-	<!-- 로컬 알림 권한 설정 -->
-	<key>NSUserNotificationAlertStyle</key>
-	<string>alert</string>
-	
-	<!-- 블루투스 권한 (iOS 13 이상) -->
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>식물 센서와 블루투스 연결을 위해 필요합니다.</string>
-
-	<!-- 블루투스 권한 (iOS 12 이하 호환) -->
-	<key>NSBluetoothPeripheralUsageDescription</key>
-	<string>센서 데이터를 받기 위해 블루투스가 필요합니다.</string>
-
-	<!-- 위치 권한 (BLE 스캔에 필요할 수 있음) -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>블루투스 기기 검색을 위해 위치 권한이 필요합니다.</string>
-
 </dict>
 </plist>

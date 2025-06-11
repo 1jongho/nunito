@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/screens/plantalarmScreen.dart';
-import 'package:nunito/services/notification_service.dart';
 import 'dart:async';
 
 class PlantDetailMyScreen extends StatefulWidget {
@@ -21,7 +20,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   DateTime selectedDate = DateTime.now();
   final TextEditingController _diaryController = TextEditingController();
 
-  // 센서 데이터 (랜덤으로 갱신됨)
+  // 센서 데이터 (블루투스 연결 상태에 따라 업데이트)
   Map<String, dynamic> _sensorData = {
     'moisture': 50,
     'temperature': 22,
@@ -29,6 +28,11 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     'lastUpdated': DateTime.now(),
   };
 
+  // 블루투스 연결 여부 확인 (widget.plant에서 가져옴)
+  bool get _isBluetoothConnected =>
+      widget.plant['isBluetoothConnected'] ?? false;
+
+  // 정상 수치 데이터 (블루투스 연결 시에만 사용)
   Map<String, dynamic> _generateNormalSensorData() {
     return {
       'moisture': 55, // 정상 범위 40-70% 중간값
@@ -65,7 +69,18 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   // 초기 센서 데이터 로드
   void _loadInitialSensorData() {
     setState(() {
-      _sensorData = FirebaseService.generateRandomSensorData();
+      if (_isBluetoothConnected) {
+        // 블루투스가 연결된 경우 랜덤 데이터 생성
+        _sensorData = FirebaseService.generateRandomSensorData();
+      } else {
+        // 블루투스가 연결되지 않은 경우 기본값 유지하고 마지막 업데이트 시간만 설정
+        _sensorData = {
+          'moisture': 50,
+          'temperature': 22,
+          'conductivity': 1.5,
+          'lastUpdated': DateTime.now(),
+        };
+      }
     });
   }
 
@@ -73,11 +88,11 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   void _startSensorDataTimer() {
     _sensorUpdateTimer = Timer.periodic(Duration(seconds: 3), (timer) {
       if (mounted) {
-        // 🔑 블루투스 연결 상태 확인
-        bool isBluetoothConnected =
+        // 🔑 블루투스 연결 상태 실시간 확인
+        bool isCurrentlyConnected =
             widget.plant['isBluetoothConnected'] ?? false;
 
-        if (isBluetoothConnected) {
+        if (isCurrentlyConnected) {
           // 블루투스가 연결된 경우에만 센서 데이터 업데이트
           Map<String, dynamic> newSensorData =
               FirebaseService.generateRandomSensorData();
@@ -85,9 +100,6 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
           setState(() {
             _sensorData = newSensorData;
           });
-
-          // 🔔 센서 데이터 업데이트 시마다 알림 확인
-          _checkAndSendAlerts(newSensorData);
 
           // Firebase에 센서 데이터 기록 (5분마다)
           if (DateTime.now().minute % 5 == 0) {
@@ -103,118 +115,25 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     });
   }
 
-  // 🔔 알림 확인 및 발송
-  void _checkAndSendAlerts(Map<String, dynamic> sensorData) {
-    try {
-      // 알림 설정 가져오기
-      Map<String, dynamic>? alarmSettings = widget.plant['alarmSettings'];
-      if (alarmSettings == null) {
-        print('⚠️ 알림 설정이 없습니다.');
-        return;
-      }
-
-      String plantName = widget.plant['nickname'] ?? '내 식물';
-      String plantId = widget.plant['id'] ?? '';
-
-      // 수분 알림 확인
-      final moistureAlarm = alarmSettings['moistureAlarm'];
-      if (moistureAlarm != null && (moistureAlarm['enabled'] ?? false)) {
-        int currentMoisture = sensorData['moisture'] ?? 50;
-        int targetMoisture = moistureAlarm['value'] ?? 30;
-        if (currentMoisture < targetMoisture) {
-          _sendAlertIfNeeded('${plantId}_moisture', () {
-            NotificationService.showPlantAlert(
-              plantName,
-              '💧 수분이 부족합니다! (현재: $currentMoisture%, 목표: $targetMoisture%)',
-            );
-          });
-        } else {}
-      } else {
-        print('🔇 수분 알림 비활성화');
-      }
-
-      // 온도 알림 확인
-      final temperatureAlarm = alarmSettings['temperatureAlarm'];
-      if (temperatureAlarm != null && (temperatureAlarm['enabled'] ?? false)) {
-        int currentTemp = sensorData['temperature'] ?? 22;
-        int targetTemp = temperatureAlarm['value'] ?? 22;
-        if (currentTemp > targetTemp + 3) {
-          _sendAlertIfNeeded('${plantId}_temperature_hot', () {
-            NotificationService.showPlantAlert(
-              plantName,
-              '🔥 온도가 너무 높습니다! (현재: $currentTemp°C, 목표: $targetTemp°C)',
-            );
-          });
-        } else if (currentTemp < targetTemp - 3) {
-          _sendAlertIfNeeded('${plantId}_temperature_cold', () {
-            NotificationService.showPlantAlert(
-              plantName,
-              '🧊 온도가 너무 낮습니다! (현재: $currentTemp°C, 목표: $targetTemp°C)',
-            );
-          });
-        } else {}
-      } else {
-        print('🔇 온도 알림 비활성화');
-      }
-
-      // 전도도 알림 확인
-      final conductivityAlarm = alarmSettings['conductivityAlarm'];
-      if (conductivityAlarm != null &&
-          (conductivityAlarm['enabled'] ?? false)) {
-        double currentCond = sensorData['conductivity'] ?? 1.5;
-        int targetCond = conductivityAlarm['value'] ?? 3;
-        if (currentCond > targetCond + 1.0) {
-          _sendAlertIfNeeded('${plantId}_conductivity_high', () {
-            NotificationService.showPlantAlert(
-              plantName,
-              '⚡ 전도도가 너무 높습니다! (현재: $currentCond mS/cm, 목표: $targetCond mS/cm)',
-            );
-          });
-        } else if (currentCond < targetCond - 1.0) {
-          _sendAlertIfNeeded('${plantId}_conductivity_low', () {
-            NotificationService.showPlantAlert(
-              plantName,
-              '🌱 전도도가 너무 낮습니다! (현재: $currentCond mS/cm, 목표: $targetCond mS/cm)',
-            );
-          });
-        } else {}
-      } else {
-        print('🔇 전도도 알림 비활성화');
-      }
-    } catch (e) {
-      print('❌ 알림 확인 실패: $e');
-    }
-  }
-
-  // 알림 스팸 방지 (같은 알림 5분 쿨다운)
-  final Map<String, DateTime> _lastAlertTime = {};
-
-  void _sendAlertIfNeeded(String alertType, VoidCallback sendAlert) {
-    DateTime now = DateTime.now();
-    DateTime? lastTime = _lastAlertTime[alertType];
-
-    if (lastTime == null || now.difference(lastTime).inMinutes >= 1) {
-      sendAlert();
-      _lastAlertTime[alertType] = now;
-    } else {}
-  }
-
   Future<void> _incrementViewCount() async {
     try {
       final plantId = widget.plant['id'];
       if (plantId != null) {
         await FirebaseService.incrementPlantViewCount(plantId);
-        print('클릭한 식물 ID: $plantId');
       }
-    } catch (e) {}
+    } catch (e) {
+      // 오류 발생 시 무시
+    }
   }
 
   // Firebase에 센서 데이터 저장 (선택적)
   Future<void> _saveSensorDataToFirebase() async {
+    if (!_isBluetoothConnected) return; // 블루투스 연결 시에만 저장
+
     try {
       await FirebaseService.saveSensorData(widget.plant['id'], _sensorData);
     } catch (e) {
-      print('센서 데이터 Firebase 저장 실패 (무시): $e');
+      // 센서 데이터 저장 실패 시 무시
     }
   }
 
@@ -233,9 +152,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       _diaries[dateKey] = diaryText;
       _diaryController.text = diaryText;
     } catch (e) {
-      print('일지 로드 실패: $e');
       _diaryController.text = '';
-      // 사용자에게 오류 메시지 표시하지 않음 (빈 일지일 수 있음)
     } finally {
       setState(() {
         _isLoadingDiary = false;
@@ -276,7 +193,6 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
         ),
       );
     } catch (e) {
-      print('일지 저장 실패: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('일지 저장에 실패했습니다: ${e.toString()}'),
@@ -290,12 +206,9 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     }
   }
 
-  // 센서 데이터 수동 새로고침
+  // 센서 데이터 수동 새로고침 (블루투스 연결 시에만 작동)
   void _refreshSensorData() {
-    // 🔑 블루투스 연결 상태 확인
-    bool isBluetoothConnected = widget.plant['isBluetoothConnected'] ?? false;
-
-    if (!isBluetoothConnected) {
+    if (!_isBluetoothConnected) {
       // 블루투스가 연결되지 않은 경우 경고 메시지
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -310,8 +223,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       return;
     }
 
+    // 블루투스가 연결된 경우에만 정상 수치로 설정
     setState(() {
-      // 블루투스가 연결된 경우에만 정상 수치로 설정
       _sensorData = _generateNormalSensorData();
     });
 
@@ -358,6 +271,11 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
 
   // 상태 색상 결정
   Color _getStatusColor(String type, double value) {
+    if (!_isBluetoothConnected) {
+      // 블루투스가 연결되지 않은 경우 회색으로 표시
+      return Colors.grey;
+    }
+
     // 각 센서별 정상 범위 (실제로는 식물별로 다르게 설정)
     Map<String, Map<String, double>> normalRanges = {
       'moisture': {'min': 40, 'max': 70},
@@ -537,10 +455,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                   SizedBox(height: 12),
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ), // 균등한 패딩
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
@@ -582,22 +497,29 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                         ),
                       ),
                       Spacer(),
-                      // 블루투스 연결 상태 표시 추가
+                      // 블루투스 연결 상태 표시
                       _buildBluetoothStatusIndicator(),
                       SizedBox(width: 8),
-                      // 새로고침 버튼
+                      // 새로고침 버튼 (블루투스 연결 시에만 활성화)
                       InkWell(
-                        onTap: _refreshSensorData,
+                        onTap:
+                            _isBluetoothConnected ? _refreshSensorData : null,
                         child: Container(
                           padding: EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Color(0xFF0BB57F).withOpacity(0.1),
+                            color:
+                                _isBluetoothConnected
+                                    ? Color(0xFF0BB57F).withOpacity(0.1)
+                                    : Colors.grey.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Icon(
                             Icons.refresh,
                             size: 16,
-                            color: Color(0xFF0BB57F),
+                            color:
+                                _isBluetoothConnected
+                                    ? Color(0xFF0BB57F)
+                                    : Colors.grey,
                           ),
                         ),
                       ),
@@ -627,7 +549,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                         ),
                       ),
                       Spacer(),
-                      if (!(widget.plant['isBluetoothConnected'] ?? false))
+                      if (!_isBluetoothConnected)
                         Text(
                           '블루투스 연결 필요',
                           style: TextStyle(
@@ -641,7 +563,7 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                   ),
                   SizedBox(height: 16),
 
-                  // 센서 데이터 (기존과 동일)
+                  // 센서 데이터 (블루투스 연결 상태에 따라 색상 변경)
                   Row(
                     children: [
                       Expanded(
@@ -842,18 +764,16 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   }
 
   Widget _buildBluetoothStatusIndicator() {
-    bool isBluetoothConnected = widget.plant['isBluetoothConnected'] ?? false;
-
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color:
-            isBluetoothConnected
+            _isBluetoothConnected
                 ? Color(0xFF0BB57F).withOpacity(0.1)
                 : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+          color: _isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
           width: 1,
         ),
       ),
@@ -861,16 +781,16 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isBluetoothConnected ? Icons.bluetooth : Icons.bluetooth_disabled,
+            _isBluetoothConnected ? Icons.bluetooth : Icons.bluetooth_disabled,
             size: 14,
-            color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+            color: _isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
           ),
           SizedBox(width: 4),
           Text(
-            isBluetoothConnected ? '연결됨' : '연결 안됨',
+            _isBluetoothConnected ? '연결됨' : '연결 안됨',
             style: TextStyle(
               fontSize: 12,
-              color: isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
+              color: _isBluetoothConnected ? Color(0xFF0BB57F) : Colors.grey,
               fontFamily: 'Pretendard',
               fontWeight: FontWeight.w500,
             ),
@@ -890,9 +810,11 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       width: isFullWidth ? double.infinity : null,
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: _isBluetoothConnected ? Colors.grey[100] : Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
+        border: Border.all(
+          color: _isBluetoothConnected ? Colors.grey[300]! : Colors.grey[200]!,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -901,7 +823,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
             title,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color:
+                  _isBluetoothConnected ? Colors.grey[600] : Colors.grey[400],
               fontFamily: 'Pretendard',
             ),
           ),
@@ -926,6 +849,14 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
+              if (!_isBluetoothConnected) ...[
+                SizedBox(width: 8),
+                Icon(
+                  Icons.bluetooth_disabled,
+                  size: 16,
+                  color: Colors.grey[400],
+                ),
+              ],
             ],
           ),
         ],
