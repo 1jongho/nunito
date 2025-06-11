@@ -101,6 +101,16 @@ class MyApp extends StatelessWidget {
           style: TextButton.styleFrom(
             splashFactory: NoSplash.splashFactory,
             overlayColor: Colors.transparent,
+            // 기본 텍스트 색상 설정
+            foregroundColor: Color(0xFF0BB57F), // 앱의 메인 컬러로 설정
+            // 비활성화 상태 색상
+            disabledForegroundColor: Colors.grey,
+            // 텍스트 스타일 설정
+            textStyle: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(

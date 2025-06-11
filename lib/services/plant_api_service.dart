@@ -104,4 +104,87 @@ class PlantApiService {
       throw Exception('Failed to load plant detail');
     }
   }
+
+  // 설문 조사 결과를 기반으로 식물 목록을 가져오는 메서드
+  Future<List<Plant>> getPlantListWithParams(Map<String, String> params) async {
+    String url = '$baseUrl/gardenList?apiKey=$apiKey';
+
+    // 기본 파라미터 설정
+    url += '&pageNo=${params['pageNo'] ?? '1'}';
+    url += '&numOfRows=${params['numOfRows'] ?? '20'}';
+
+    // 설문 조사 기반 파라미터 추가 (API 가이드 기준)
+    if (params['lightChkVal'] != null && params['lightChkVal']!.isNotEmpty) {
+      url += '&lightChkVal=${params['lightChkVal']}';
+    }
+
+    if (params['grwhstleChkVal'] != null &&
+        params['grwhstleChkVal']!.isNotEmpty) {
+      url += '&grwhstleChkVal=${params['grwhstleChkVal']}';
+    }
+
+    if (params['lefcolrChkVal'] != null &&
+        params['lefcolrChkVal']!.isNotEmpty) {
+      url += '&lefcolrChkVal=${params['lefcolrChkVal']}';
+    }
+
+    if (params['lefmrkChkVal'] != null && params['lefmrkChkVal']!.isNotEmpty) {
+      url += '&lefmrkChkVal=${params['lefmrkChkVal']}';
+    }
+
+    if (params['flclrChkVal'] != null && params['flclrChkVal']!.isNotEmpty) {
+      url += '&flclrChkVal=${params['flclrChkVal']}';
+    }
+
+    if (params['fmldecolrChkVal'] != null &&
+        params['fmldecolrChkVal']!.isNotEmpty) {
+      url += '&fmldecolrChkVal=${params['fmldecolrChkVal']}';
+    }
+
+    if (params['ignSeasonChkVal'] != null &&
+        params['ignSeasonChkVal']!.isNotEmpty) {
+      url += '&ignSeasonChkVal=${params['ignSeasonChkVal']}';
+    }
+
+    if (params['winterLwetChkVal'] != null &&
+        params['winterLwetChkVal']!.isNotEmpty) {
+      url += '&winterLwetChkVal=${params['winterLwetChkVal']}';
+    }
+
+    if (params['waterCycleSel'] != null &&
+        params['waterCycleSel']!.isNotEmpty) {
+      url += '&waterCycleSel=${params['waterCycleSel']}';
+    }
+
+    print('API 요청 URL: $url'); // 디버깅용
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final document = xml.XmlDocument.parse(response.body);
+
+      // 에러 코드 확인
+      final resultCode =
+          document.findAllElements('resultCode').firstOrNull?.innerText;
+      if (resultCode != null && resultCode != '00') {
+        final resultMsg =
+            document.findAllElements('resultMsg').firstOrNull?.innerText ??
+            '알 수 없는 오류';
+        throw Exception('API 오류 (코드: $resultCode): $resultMsg');
+      }
+
+      final items = document.findAllElements('item');
+
+      return items.map((item) {
+        return Plant(
+          cntntsNo: _getElementText(item, 'cntntsNo'),
+          cntntsSj: _getElementText(item, 'cntntsSj'),
+          rtnFileUrl: _getElementText(item, 'rtnFileUrl'),
+          rtnThumbFileUrl: _getElementText(item, 'rtnThumbFileUrl'),
+        );
+      }).toList();
+    } else {
+      throw Exception('API 호출 실패 (HTTP ${response.statusCode})');
+    }
+  }
 }
