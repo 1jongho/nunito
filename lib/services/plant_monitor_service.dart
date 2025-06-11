@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/services/notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PlantMonitorService {
   static Timer? _monitoringTimer;
@@ -24,7 +25,6 @@ class PlantMonitorService {
 
   /// 식물 모니터링 중지
   static void stopMonitoring() {
-    print('🛑 백그라운드 식물 모니터링 중지');
     _monitoringTimer?.cancel();
     _isMonitoring = false;
   }
@@ -36,13 +36,21 @@ class PlantMonitorService {
       List<Map<String, dynamic>> plants = await FirebaseService.getMyPlants();
 
       if (plants.isEmpty) {
-        print('⚠️ 등록된 식물이 없습니다.');
         return;
       }
 
       for (int i = 0; i < plants.length; i++) {
         var plant = plants[i];
-        String plantName = plant['nickname'] ?? '식물 ${i + 1}';
+        String plantId = plant['id'] ?? '';
+
+        // 실시간 블루투스 연결 상태 확인
+        bool isBluetoothConnected = await _checkRealtimeBluetoothStatus(
+          plantId,
+        );
+
+        if (!isBluetoothConnected) {
+          continue; // 블루투스 연결 안된 식물은 건너뛰기
+        }
 
         // 각 식물마다 새로운 랜덤 센서 데이터 생성
         Map<String, dynamic> sensorData =
@@ -50,7 +58,33 @@ class PlantMonitorService {
         await checkPlantStatusWithSensorData(plant, sensorData);
       }
     } catch (e) {
-      print('❌ 백그라운드 식물 상태 확인 실패: $e');
+      // 오류 발생 시 무시
+    }
+  }
+
+  /// 실시간 블루투스 연결 상태 확인 (Firebase에서 조회)
+  static Future<bool> _checkRealtimeBluetoothStatus(String plantId) async {
+    try {
+      if (plantId.isEmpty) {
+        return false;
+      }
+
+      DocumentSnapshot doc =
+          await FirebaseFirestore.instance
+              .collection('my_plants')
+              .doc(plantId)
+              .get();
+
+      if (!doc.exists) {
+        return false;
+      }
+
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      bool isConnected = data['isBluetoothConnected'] ?? false;
+
+      return isConnected;
+    } catch (e) {
+      return false; // 오류 시 연결 안됨으로 처리
     }
   }
 
@@ -63,10 +97,29 @@ class PlantMonitorService {
       String plantId = plant['id'] ?? '';
       String plantName = plant['nickname'] ?? '내 식물';
 
-      // 알림 설정 가져오기
-      Map<String, dynamic>? alarmSettings = plant['alarmSettings'];
+      // 한 번 더 실시간 블루투스 상태 확인 (더블 체크)
+      bool isBluetoothConnected = await _checkRealtimeBluetoothStatus(plantId);
+
+      if (!isBluetoothConnected) {
+        return;
+      }
+
+      // 알림 설정 가져오기 (실시간으로 다시 조회)
+      DocumentSnapshot doc =
+          await FirebaseFirestore.instance
+              .collection('my_plants')
+              .doc(plantId)
+              .get();
+
+      if (!doc.exists) {
+        return;
+      }
+
+      Map<String, dynamic> currentPlantData =
+          doc.data() as Map<String, dynamic>;
+      Map<String, dynamic>? alarmSettings = currentPlantData['alarmSettings'];
+
       if (alarmSettings == null) {
-        print('⚠️ [$plantName] 알림 설정이 없습니다.');
         return;
       }
 
@@ -85,7 +138,7 @@ class PlantMonitorService {
         alarmSettings,
       );
     } catch (e) {
-      print('❌ 식물 상태 확인 실패: $e');
+      // 오류 발생 시 무시
     }
   }
 
@@ -142,8 +195,6 @@ class PlantMonitorService {
       String notificationKey = '${plantId}_temperature';
 
       if (_canSendNotification(notificationKey)) {
-        String status = isTooHot ? '너무 뜨거움' : '너무 추움';
-
         await NotificationService.showTemperatureAlert(
           plantName: plantName,
           currentValue: currentTemperature,
@@ -179,8 +230,6 @@ class PlantMonitorService {
       String notificationKey = '${plantId}_conductivity';
 
       if (_canSendNotification(notificationKey)) {
-        String status = isTooHigh ? '너무 높음' : '너무 낮음';
-
         await NotificationService.showConductivityAlert(
           plantName: plantName,
           currentValue: currentConductivity,

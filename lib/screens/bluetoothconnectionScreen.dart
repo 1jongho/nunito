@@ -1,3 +1,5 @@
+// bluetoothconnectionScreen.dart - 개선된 연결 로직
+
 import 'package:flutter/material.dart';
 import 'package:nunito/services/bluetooth_service.dart';
 import 'package:nunito/services/firebase_service.dart';
@@ -19,6 +21,7 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   bool _isConnecting = false;
   bool _bluetoothEnabled = false;
   bool _showPairedDevices = true;
+  String _connectionStatus = ''; // 연결 상태 메시지 추가
 
   @override
   void initState() {
@@ -29,16 +32,16 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   Future<void> _initializeBluetooth() async {
     try {
       // 권한 확인
-      bool hasPermission = await BluetoothService.requestPermissions();
+      bool hasPermission = await BluetoothServiceManager.requestPermissions();
       if (!hasPermission) {
         _showErrorDialog('블루투스 권한이 필요합니다.');
         return;
       }
 
       // 블루투스 상태 확인
-      bool enabled = await BluetoothService.isBluetoothEnabled();
+      bool enabled = await BluetoothServiceManager.isBluetoothEnabled();
       if (!enabled) {
-        bool enableResult = await BluetoothService.enableBluetooth();
+        bool enableResult = await BluetoothServiceManager.enableBluetooth();
         if (!enableResult) {
           _showErrorDialog('블루투스를 활성화해주세요.');
           return;
@@ -60,7 +63,7 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   Future<void> _loadPairedDevices() async {
     try {
       List<UniversalBluetoothDevice> devices =
-          await BluetoothService.getPairedDevices();
+          await BluetoothServiceManager.getPairedDevices();
       setState(() {
         _pairedDevices = devices;
       });
@@ -78,7 +81,7 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       _showPairedDevices = false;
     });
 
-    BluetoothService.startDiscovery().listen(
+    BluetoothServiceManager.startDiscovery().listen(
       (device) {
         setState(() {
           bool exists = _discoveredDevices.any(
@@ -109,49 +112,91 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   void _stopDiscovery() {
     if (!_isDiscovering) return;
 
-    BluetoothService.cancelDiscovery();
+    BluetoothServiceManager.cancelDiscovery();
     setState(() {
       _isDiscovering = false;
     });
   }
 
+  // 🔧 개선된 연결 메서드
   Future<void> _connectToDevice(UniversalBluetoothDevice device) async {
     setState(() {
       _isConnecting = true;
+      _connectionStatus = '연결 중...';
     });
 
     try {
-      bool success = await BluetoothService.connectToDevice(device);
+      // 1단계: 물리적 연결 시도
+      setState(() {
+        _connectionStatus = '${device.name}에 연결 시도 중...';
+      });
 
-      if (success) {
-        // Firebase에 연결 상태 업데이트
-        await FirebaseService.updateBluetoothConnection(
-          plantId: widget.plant['id'],
-          isConnected: true,
-          deviceId: device.address,
-        );
+      bool success = await BluetoothServiceManager.connectToDevice(device);
 
-        // 성공 메시지
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${device.name}에 연결되었습니다.',
-              style: TextStyle(fontFamily: 'Pretendard'),
-            ),
-            backgroundColor: Color(0xFF0BB57F),
-          ),
-        );
-
-        // 이전 화면으로 돌아가기
-        Navigator.pop(context, true);
-      } else {
-        _showErrorDialog('연결에 실패했습니다. 다시 시도해주세요.');
+      if (!success) {
+        throw Exception('연결에 실패했습니다');
       }
+
+      // 2단계: 실제 연결 상태 재확인
+      setState(() {
+        _connectionStatus = '연결 상태 확인 중...';
+      });
+
+      await Future.delayed(Duration(seconds: 2)); // 연결 안정화 대기
+
+      bool reallyConnected = await BluetoothServiceManager.isReallyConnected();
+      if (!reallyConnected) {
+        throw Exception('연결이 완료되지 않았습니다');
+      }
+
+      // 3단계: Firebase 상태 업데이트
+      setState(() {
+        _connectionStatus = 'Firebase 업데이트 중...';
+      });
+
+      await FirebaseService.updateBluetoothConnection(
+        plantId: widget.plant['id'],
+        isConnected: true,
+        deviceId: device.address,
+      );
+
+      // 4단계: 연결 모니터링 시작
+      BluetoothServiceManager.startConnectionMonitoring();
+
+      // 성공 메시지
+      setState(() {
+        _connectionStatus = '연결 완료!';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ ${device.name}에 성공적으로 연결되었습니다.',
+            style: TextStyle(fontFamily: 'Pretendard'),
+          ),
+          backgroundColor: Color(0xFF0BB57F),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      // 잠시 대기 후 이전 화면으로 돌아가기
+      await Future.delayed(Duration(seconds: 1));
+      Navigator.pop(context, true);
     } catch (e) {
-      _showErrorDialog('연결 중 오류가 발생했습니다: ${e.toString()}');
+      print('❌ 연결 실패: $e');
+
+      setState(() {
+        _connectionStatus = '연결 실패';
+      });
+
+      // 실패 시 정리 작업
+      await BluetoothServiceManager.disconnect();
+
+      _showErrorDialog('연결 실패: ${e.toString()}\n\n다시 시도해주세요.');
     } finally {
       setState(() {
         _isConnecting = false;
+        _connectionStatus = '';
       });
     }
   }
@@ -191,44 +236,6 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
         elevation: 0,
       ),
       body: _bluetoothEnabled ? _buildDeviceList() : _buildBluetoothDisabled(),
-    );
-  }
-
-  Widget _buildBluetoothDisabled() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            '블루투스가 비활성화되어 있습니다',
-            style: TextStyle(
-              fontSize: 18,
-              fontFamily: 'Pretendard',
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '설정에서 블루투스를 활성화해주세요',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontFamily: 'Pretendard',
-            ),
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _initializeBluetooth,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF0BB57F),
-              foregroundColor: Colors.white,
-            ),
-            child: Text('다시 시도', style: TextStyle(fontFamily: 'Pretendard')),
-          ),
-        ],
-      ),
     );
   }
 
@@ -275,7 +282,42 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
           ),
         ),
 
-        // 탭 바
+        // 연결 상태 표시 (연결 중일 때만)
+        if (_isConnecting && _connectionStatus.isNotEmpty)
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.blue,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _connectionStatus,
+                    style: TextStyle(
+                      fontFamily: 'Pretendard',
+                      fontWeight: FontWeight.w500,
+                      color: Colors.blue[800],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // 탭 바 (기존과 동일)
         Container(
           margin: EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
@@ -373,6 +415,7 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
     );
   }
 
+  // 나머지 메서드들은 기존과 동일...
   Widget _buildCurrentDeviceList() {
     List<UniversalBluetoothDevice> currentDevices =
         _showPairedDevices ? _pairedDevices : _discoveredDevices;
@@ -492,11 +535,50 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
     );
   }
 
+  Widget _buildBluetoothDisabled() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.bluetooth_disabled, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            '블루투스가 비활성화되어 있습니다',
+            style: TextStyle(
+              fontSize: 18,
+              fontFamily: 'Pretendard',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            '설정에서 블루투스를 활성화해주세요',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontFamily: 'Pretendard',
+            ),
+          ),
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _initializeBluetooth,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF0BB57F),
+              foregroundColor: Colors.white,
+            ),
+            child: Text('다시 시도', style: TextStyle(fontFamily: 'Pretendard')),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     if (_isDiscovering) {
       _stopDiscovery();
     }
+    BluetoothServiceManager.stopConnectionMonitoring();
     super.dispose();
   }
 }

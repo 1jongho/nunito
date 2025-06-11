@@ -41,6 +41,9 @@ class BluetoothServiceManager {
   // 스캔 결과를 저장할 컨트롤러
   static StreamController<UniversalBluetoothDevice>? _discoveryController;
 
+  // 연결 상태 주기적 체크
+  static Timer? _connectionCheckTimer;
+
   /// 초기화
   static Future<void> initialize() async {
     print('🔧 블루투스 서비스 초기화 시작...');
@@ -622,7 +625,7 @@ class BluetoothServiceManager {
     }
   }
 
-  /// 기기에 연결
+  /// 🔧 진짜 블루투스 연결을 확인하는 개선된 메서드
   static Future<bool> connectToDevice(UniversalBluetoothDevice device) async {
     try {
       print('🔗 연결 시도: ${device.name} (${device.address})');
@@ -633,95 +636,243 @@ class BluetoothServiceManager {
       fbp.BluetoothDevice bluetoothDevice =
           device.platformDevice as fbp.BluetoothDevice;
 
-      // 기기에 연결 (15초 타임아웃)
+      // 1단계: 기기에 연결 시도
+      print('🔄 1단계: 물리적 연결 시도...');
       await bluetoothDevice.connect(timeout: Duration(seconds: 15));
-      print('✅ 기기 연결 성공');
+      print('📡 물리적 연결 시도 완료');
 
-      // 연결 상태 모니터링
-      _deviceConnectionSubscription = bluetoothDevice.connectionState.listen((
-        state,
-      ) {
-        print('🔗 연결 상태 변경: $state');
-        if (state == fbp.BluetoothConnectionState.disconnected) {
-          _handleConnectionLost();
-        }
-      });
+      // 2단계: 실제 연결 상태 확인 (더 엄격하게)
+      print('🔄 2단계: 실제 연결 상태 확인...');
+      bool isActuallyConnected = false;
 
-      // 서비스 발견 (fbp. 접두사로 라이브러리의 BluetoothService 사용)
-      List<fbp.BluetoothService> services =
-          await bluetoothDevice.discoverServices();
-      print('🔍 발견된 서비스 ${services.length}개');
+      for (int i = 0; i < 15; i++) {
+        // 7.5초 동안 확인
+        await Future.delayed(Duration(milliseconds: 500));
 
-      // 특성 찾기
-      bool characteristicsFound = false;
-      for (fbp.BluetoothService service in services) {
-        // characteristics 속성 직접 접근
-        for (fbp.BluetoothCharacteristic characteristic
-            in service.characteristics) {
-          print(
-            '📋 특성 발견: ${characteristic.uuid} (속성: ${characteristic.properties})',
-          );
+        try {
+          fbp.BluetoothConnectionState currentState = await bluetoothDevice
+              .connectionState
+              .first
+              .timeout(Duration(seconds: 2));
+          print('🔍 연결 상태 확인 ${i + 1}/15: $currentState');
 
-          // 쓰기 가능한 특성 찾기
-          if (characteristic.properties.write ||
-              characteristic.properties.writeWithoutResponse) {
-            _writeCharacteristic = characteristic;
-            characteristicsFound = true;
-            print('✅ 쓰기 특성 설정: ${characteristic.uuid}');
+          if (currentState == fbp.BluetoothConnectionState.connected) {
+            // 3단계: 추가 검증 - 실제 연결 테스트
+            try {
+              // 서비스 발견으로 실제 연결 검증
+              List<fbp.BluetoothService> services = await bluetoothDevice
+                  .discoverServices()
+                  .timeout(Duration(seconds: 3));
+              print('✅ 서비스 발견 성공: ${services.length}개 - 진짜 연결됨!');
+              isActuallyConnected = true;
+              break;
+            } catch (serviceError) {
+              print('⚠️ 서비스 발견 실패: $serviceError - 가짜 연결일 수 있음');
+              // 서비스 발견 실패하면 계속 시도
+              continue;
+            }
           }
+        } catch (timeoutError) {
+          print('⚠️ 연결 상태 확인 타임아웃: $timeoutError');
+          continue;
+        }
+      }
 
-          // 읽기 또는 알림 가능한 특성 찾기
-          if (characteristic.properties.read ||
-              characteristic.properties.notify) {
-            _readCharacteristic = characteristic;
-            characteristicsFound = true;
-            print('✅ 읽기 특성 설정: ${characteristic.uuid}');
+      if (!isActuallyConnected) {
+        print('❌ 연결 시도했지만 실제로는 연결되지 않음');
 
-            // 알림 구독
-            if (characteristic.properties.notify) {
-              try {
-                await characteristic.setNotifyValue(true);
-                characteristic.lastValueStream.listen((data) {
-                  _onDataReceived(data);
-                });
-                print('🔔 알림 구독 성공');
-              } catch (e) {
-                print('⚠️ 알림 구독 실패: $e');
+        // 가짜 연결 정리
+        try {
+          await bluetoothDevice.disconnect();
+        } catch (e) {
+          print('⚠️ 가짜 연결 정리 중 오류: $e');
+        }
+
+        return false;
+      }
+
+      // 4단계: 연결 상태 모니터링 설정
+      print('🔄 4단계: 연결 모니터링 설정...');
+      _deviceConnectionSubscription?.cancel(); // 기존 구독 취소
+      _deviceConnectionSubscription = bluetoothDevice.connectionState.listen(
+        (state) {
+          print('🔗 연결 상태 변경: $state');
+          if (state == fbp.BluetoothConnectionState.disconnected) {
+            _handleConnectionLost();
+          }
+        },
+        onError: (error) {
+          print('❌ 연결 모니터링 오류: $error');
+          _handleConnectionLost();
+        },
+      );
+
+      // 5단계: 서비스 및 특성 설정
+      print('🔄 5단계: 서비스 및 특성 설정...');
+      try {
+        List<fbp.BluetoothService> services =
+            await bluetoothDevice.discoverServices();
+        print('🔍 발견된 서비스 ${services.length}개');
+
+        // 특성 찾기
+        bool characteristicsFound = false;
+        for (fbp.BluetoothService service in services) {
+          for (fbp.BluetoothCharacteristic characteristic
+              in service.characteristics) {
+            print(
+              '📋 특성 발견: ${characteristic.uuid} (속성: ${characteristic.properties})',
+            );
+
+            // 쓰기 가능한 특성 찾기
+            if (characteristic.properties.write ||
+                characteristic.properties.writeWithoutResponse) {
+              _writeCharacteristic = characteristic;
+              characteristicsFound = true;
+              print('✅ 쓰기 특성 설정: ${characteristic.uuid}');
+            }
+
+            // 읽기 또는 알림 가능한 특성 찾기
+            if (characteristic.properties.read ||
+                characteristic.properties.notify) {
+              _readCharacteristic = characteristic;
+              characteristicsFound = true;
+              print('✅ 읽기 특성 설정: ${characteristic.uuid}');
+
+              // 알림 구독
+              if (characteristic.properties.notify) {
+                try {
+                  await characteristic.setNotifyValue(true);
+                  characteristic.lastValueStream.listen((data) {
+                    _onDataReceived(data);
+                  });
+                  print('🔔 알림 구독 성공');
+                } catch (e) {
+                  print('⚠️ 알림 구독 실패: $e');
+                }
               }
             }
           }
         }
+
+        if (!characteristicsFound) {
+          print('⚠️ 사용 가능한 특성을 찾지 못했지만 연결은 유지');
+        }
+      } catch (serviceError) {
+        print('⚠️ 서비스 발견 실패: $serviceError (연결은 유지)');
       }
 
+      // 6단계: 연결 정보 저장
       _connectedDevice = bluetoothDevice;
       isConnected = true;
       connectedDeviceName = device.name;
       lastConnectedDeviceAddress = device.address;
 
-      print('✅ 연결 성공: ${device.name}');
-      print('📊 특성 발견 여부: $characteristicsFound');
+      // 7단계: 실제 데이터 전송 테스트 (선택적)
+      print('🔄 7단계: 실제 데이터 전송 테스트...');
+      if (_writeCharacteristic != null) {
+        try {
+          // 실제 데이터 전송 시도
+          await sendData('REAL_CONNECTION_TEST');
+          print('📤 실제 데이터 전송 테스트 성공');
+        } catch (testError) {
+          print('⚠️ 데이터 전송 테스트 실패: $testError (하지만 연결은 유지)');
+        }
+      } else {
+        print('⚠️ 쓰기 특성이 없어서 데이터 전송 테스트 생략');
+      }
+
+      // 8단계: 추가 연결 검증
+      print('🔄 8단계: 최종 연결 검증...');
+      await Future.delayed(Duration(seconds: 1)); // 1초 대기
+
+      try {
+        fbp.BluetoothConnectionState finalState = await bluetoothDevice
+            .connectionState
+            .first
+            .timeout(Duration(seconds: 2));
+        if (finalState != fbp.BluetoothConnectionState.connected) {
+          print('❌ 최종 검증 실패: 연결이 불안정함');
+          await disconnect();
+          return false;
+        }
+      } catch (e) {
+        print('❌ 최종 검증 실패: $e');
+        await disconnect();
+        return false;
+      }
+
+      print('🎉 블루투스 연결 완전히 성공: ${device.name}');
+      print('📊 특성 정보:');
+      print('   - 쓰기 특성: ${_writeCharacteristic != null ? "있음" : "없음"}');
+      print('   - 읽기 특성: ${_readCharacteristic != null ? "있음" : "없음"}');
 
       return true;
     } catch (e) {
       print('❌ 연결 실패: $e');
-      isConnected = false;
-      connectedDeviceName = '';
+
+      // 연결 실패 시 완전히 정리
+      await disconnect();
+
       return false;
     }
   }
 
-  /// 데이터 전송
-  static Future<bool> sendData(String data) async {
+  /// 🔍 진짜 연결 상태를 확인하는 강화된 메서드
+  static Future<bool> isReallyConnected() async {
     try {
-      if (_connectedDevice != null && _writeCharacteristic != null) {
-        List<int> bytes = utf8.encode(data);
-        await _writeCharacteristic!.write(bytes);
-        print('📤 데이터 전송 성공: $data');
-        return true;
-      } else {
-        print('❌ 연결되지 않음 또는 쓰기 특성 없음');
+      if (_connectedDevice == null) {
+        print('🔍 연결 상태 확인: 연결된 기기가 없음');
         return false;
       }
+
+      // 1단계: 연결 상태 확인
+      fbp.BluetoothConnectionState state = await _connectedDevice!
+          .connectionState
+          .first
+          .timeout(Duration(seconds: 3));
+      print('🔍 현재 연결 상태: $state');
+
+      if (state != fbp.BluetoothConnectionState.connected) {
+        print('❌ 연결 상태가 아님');
+        return false;
+      }
+
+      // 2단계: 서비스 재확인으로 실제 연결 검증
+      try {
+        List<fbp.BluetoothService> services = await _connectedDevice!
+            .discoverServices()
+            .timeout(Duration(seconds: 5));
+        print('✅ 서비스 재확인 성공: ${services.length}개 - 진짜 연결됨');
+        return true;
+      } catch (serviceError) {
+        print('❌ 서비스 재확인 실패: $serviceError - 가짜 연결');
+        return false;
+      }
+    } catch (e) {
+      print('❌ 연결 상태 확인 실패: $e');
+      return false;
+    }
+  }
+
+  /// 🔧 개선된 데이터 전송 메서드 (실제 연결 확인 포함)
+  static Future<bool> sendData(String data) async {
+    try {
+      // 먼저 실제 연결 상태 확인
+      if (!await isReallyConnected()) {
+        print('❌ 실제 연결되지 않음 - 데이터 전송 불가');
+        return false;
+      }
+
+      if (_writeCharacteristic == null) {
+        print('❌ 쓰기 특성이 없음 - 데이터 전송 불가');
+        return false;
+      }
+
+      List<int> bytes = utf8.encode(data);
+      await _writeCharacteristic!.write(bytes);
+      print('📤 실제 데이터 전송 성공: $data');
+
+      return true;
     } catch (e) {
       print('❌ 데이터 전송 오류: $e');
       return false;
@@ -763,6 +914,28 @@ class BluetoothServiceManager {
     return await sendData('GET_SENSOR_DATA');
   }
 
+  /// 연결 상태 주기적 체크 시작
+  static void startConnectionMonitoring() {
+    _connectionCheckTimer?.cancel();
+
+    _connectionCheckTimer = Timer.periodic(Duration(seconds: 10), (
+      timer,
+    ) async {
+      if (isConnected) {
+        bool reallyConnected = await isReallyConnected();
+        if (!reallyConnected) {
+          print('⚠️ 연결이 끊어진 것을 감지함');
+          _handleConnectionLost();
+        }
+      }
+    });
+  }
+
+  /// 연결 상태 주기적 체크 중지
+  static void stopConnectionMonitoring() {
+    _connectionCheckTimer?.cancel();
+  }
+
   /// 데이터 수신 처리
   static void _onDataReceived(List<int> data) {
     try {
@@ -800,5 +973,5 @@ class BluetoothServiceManager {
   }
 }
 
-// 기존 코드와의 호환성을 위한 별칭 (선택사항)
+// 기존 코드와의 호환성을 위한 별칭
 typedef BluetoothService = BluetoothServiceManager;
