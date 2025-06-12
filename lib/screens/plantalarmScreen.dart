@@ -5,6 +5,7 @@ import 'package:nunito/widgets/switch.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/services/notification_service.dart'; // 수정
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 
 class PlantAlarmScreen extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -121,7 +122,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
       );
 
       // 성공 메시지
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "알림 설정이 저장되었습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -134,7 +136,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
       Navigator.pop(context);
     } catch (e) {
       print('알림 설정 저장 실패: $e');
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "알림 설정 저장에 실패했습니다: ${e.toString()}",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -159,7 +162,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
         body:
             '알림이 정상 작동합니다! 시간: ${DateTime.now().toString().substring(11, 19)}',
       );
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "즉시 테스트 알림이 발송되었습니다!",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -169,7 +173,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
       );
     } catch (e) {
       print('테스트 알림 발송 실패: $e');
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "테스트 알림 발송에 실패했습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -183,7 +188,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
   // 연속 알림 테스트
   Future<void> _sendMultipleTestNotifications() async {
     try {
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "3개의 연속 알림을 발송합니다...",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -207,7 +213,8 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
 
       // 앱을 백그라운드로 보내라는 안내
       await Future.delayed(Duration(seconds: 1));
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "홈 버튼을 눌러 앱을 백그라운드로 보내보세요!",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,

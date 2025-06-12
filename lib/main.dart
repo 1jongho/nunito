@@ -7,7 +7,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/services/notification_service.dart';
 import 'package:nunito/services/plant_monitor_service.dart';
-import 'package:nunito/services/bluetooth_service.dart'; // 추가
+import 'package:nunito/services/bluetooth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

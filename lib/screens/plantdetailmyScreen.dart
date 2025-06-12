@@ -6,6 +6,7 @@ import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/screens/plantalarmScreen.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 import 'dart:async';
 
 class PlantDetailMyScreen extends StatefulWidget {
@@ -164,7 +165,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   // 일지 저장
   Future<void> _saveDiary() async {
     if (_diaryController.text.trim().isEmpty) {
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "일지 내용을 입력해주세요.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -189,7 +191,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       String dateKey = DateFormat('yyyy-MM-dd').format(selectedDate);
       _diaries[dateKey] = _diaryController.text.trim();
 
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "일지가 저장되었습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -198,7 +201,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
         fontSize: 16.0,
       );
     } catch (e) {
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "일지 저장에 실패했습니다: ${e.toString()}",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -217,7 +221,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   void _refreshSensorData() {
     if (!_isBluetoothConnected) {
       // 블루투스가 연결되지 않은 경우 경고 메시지
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "블루투스가 연결되지 않았습니다. 센서 데이터를 받을 수 없습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -234,7 +239,8 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     });
 
     // 성공 메시지 표시
-    Fluttertoast.showToast(
+    CustomFluttertoast.showToast(
+      context: context,
       msg: "센서 데이터가 새로고침되었습니다.",
       toastLength: Toast.LENGTH_SHORT,
       gravity: ToastGravity.BOTTOM,

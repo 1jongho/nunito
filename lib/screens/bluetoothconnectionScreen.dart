@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nunito/services/bluetooth_service.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 
 class BluetoothConnectionScreen extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -166,7 +167,8 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       setState(() {
         _connectionStatus = '연결 완료!';
       });
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "✅ ${device.name}에 성공적으로 연결되었습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,

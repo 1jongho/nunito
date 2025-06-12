@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 
 class AddPlantScreen extends StatefulWidget {
   final String? scientificName;
@@ -107,7 +108,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
     } catch (e) {
       print('❌ 이미지 선택 실패: $e');
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "이미지 선택에 실패했습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -187,7 +189,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                               // 1단계에서 필수 필드 검증
                               if (_currentStep == 0) {
                                 if (_nicknameController.text.trim().isEmpty) {
-                                  Fluttertoast.showToast(
+                                  CustomFluttertoast.showToast(
+                                    context: context,
                                     msg: "애칭을 입력해주세요.",
                                     toastLength: Toast.LENGTH_SHORT,
                                     gravity: ToastGravity.BOTTOM,
@@ -200,7 +203,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                                 if (_scientificNameController.text
                                     .trim()
                                     .isEmpty) {
-                                  Fluttertoast.showToast(
+                                  CustomFluttertoast.showToast(
+                                    context: context,
                                     msg: "학명을 입력해주세요.",
                                     toastLength: Toast.LENGTH_SHORT,
                                     gravity: ToastGravity.BOTTOM,
@@ -688,7 +692,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       print('✅ 식물 저장 완료: $plantId');
 
       // 성공 메시지
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "${_nicknameController.text.trim()}이(가) 추가되었습니다!",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -706,7 +711,8 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       print('❌ 식물 저장 실패: $e');
 
       // 오류 메시지 표시
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "저장 중 오류가 발생했습니다: ${e.toString()}",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
