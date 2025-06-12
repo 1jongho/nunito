@@ -551,7 +551,7 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
               // 식물 정보
               Padding(
-                padding: EdgeInsets.all(20),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
                     Text(
@@ -562,9 +562,9 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                         fontFamily: 'Pretendard',
                       ),
                     ),
-                    SizedBox(height: 16),
+                    SizedBox(height: 12),
 
-                    // 메뉴 항목들
+                    // 메뉴 항목들 (알림 설정 제거됨)
                     ListTile(
                       leading: Icon(Icons.visibility, color: Color(0xFF0BB57F)),
                       title: Text(
@@ -579,25 +579,6 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                             builder:
                                 (context) => PlantDetailMyScreen(plant: plant),
                           ),
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.notifications, color: Colors.orange),
-                      title: Text(
-                        '알림 설정',
-                        style: TextStyle(fontFamily: 'Pretendard'),
-                      ),
-                      onTap: () {
-                        Navigator.pop(context);
-                        CustomFluttertoast.showToast(
-                          context: context,
-                          msg: "알림 설정 페이지 (준비 중)",
-                          toastLength: Toast.LENGTH_SHORT,
-                          gravity: ToastGravity.BOTTOM,
-                          backgroundColor: Colors.orange,
-                          textColor: Colors.white,
-                          fontSize: 16.0,
                         );
                       },
                     ),

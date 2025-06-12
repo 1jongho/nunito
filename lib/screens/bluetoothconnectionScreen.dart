@@ -48,9 +48,11 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
         }
       }
 
-      setState(() {
-        _bluetoothEnabled = true;
-      });
+      if (mounted) {
+        setState(() {
+          _bluetoothEnabled = true;
+        });
+      }
 
       // 페어링된 기기 목록 가져오기
       await _loadPairedDevices();
@@ -64,16 +66,18 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
     try {
       List<UniversalBluetoothDevice> devices =
           await BluetoothServiceManager.getPairedDevices();
-      setState(() {
-        _pairedDevices = devices;
-      });
+      if (mounted) {
+        setState(() {
+          _pairedDevices = devices;
+        });
+      }
     } catch (e) {
       print('❌ 페어링된 기기 로드 오류: $e');
     }
   }
 
   void _startDiscovery() {
-    if (_isDiscovering) return;
+    if (_isDiscovering || !mounted) return;
 
     setState(() {
       _isDiscovering = true;
@@ -83,14 +87,16 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
 
     BluetoothServiceManager.startDiscovery().listen(
       (device) {
-        setState(() {
-          bool exists = _discoveredDevices.any(
-            (d) => d.address == device.address,
-          );
-          if (!exists) {
-            _discoveredDevices.add(device);
-          }
-        });
+        if (mounted) {
+          setState(() {
+            bool exists = _discoveredDevices.any(
+              (d) => d.address == device.address,
+            );
+            if (!exists) {
+              _discoveredDevices.add(device);
+            }
+          });
+        }
       },
       onError: (error) {
         print('❌ 기기 검색 오류: $error');
@@ -103,7 +109,7 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
 
     // 30초 후 자동 중지
     Future.delayed(Duration(seconds: 30), () {
-      if (_isDiscovering) {
+      if (_isDiscovering && mounted) {
         _stopDiscovery();
       }
     });
@@ -112,14 +118,25 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   void _stopDiscovery() {
     if (!_isDiscovering) return;
 
-    BluetoothServiceManager.cancelDiscovery();
-    setState(() {
+    try {
+      BluetoothServiceManager.cancelDiscovery();
+    } catch (e) {
+      // 오류 발생 시 무시
+    }
+
+    if (mounted) {
+      setState(() {
+        _isDiscovering = false;
+      });
+    } else {
       _isDiscovering = false;
-    });
+    }
   }
 
   // 🔧 개선된 연결 메서드
   Future<void> _connectToDevice(UniversalBluetoothDevice device) async {
+    if (!mounted) return;
+
     setState(() {
       _isConnecting = true;
       _connectionStatus = '연결 중...';
@@ -127,9 +144,11 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
 
     try {
       // 1단계: 물리적 연결 시도
-      setState(() {
-        _connectionStatus = '${device.name}에 연결 시도 중...';
-      });
+      if (mounted) {
+        setState(() {
+          _connectionStatus = '${device.name}에 연결 시도 중...';
+        });
+      }
 
       bool success = await BluetoothServiceManager.connectToDevice(device);
 
@@ -138,9 +157,11 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       }
 
       // 2단계: 실제 연결 상태 재확인
-      setState(() {
-        _connectionStatus = '연결 상태 확인 중...';
-      });
+      if (mounted) {
+        setState(() {
+          _connectionStatus = '연결 상태 확인 중...';
+        });
+      }
 
       await Future.delayed(Duration(seconds: 2)); // 연결 안정화 대기
 
@@ -150,9 +171,11 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       }
 
       // 3단계: Firebase 상태 업데이트
-      setState(() {
-        _connectionStatus = 'Firebase 업데이트 중...';
-      });
+      if (mounted) {
+        setState(() {
+          _connectionStatus = 'Firebase 업데이트 중...';
+        });
+      }
 
       await FirebaseService.updateBluetoothConnection(
         plantId: widget.plant['id'],
@@ -164,42 +187,55 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       BluetoothServiceManager.startConnectionMonitoring();
 
       // 성공 메시지
-      setState(() {
-        _connectionStatus = '연결 완료!';
-      });
-      CustomFluttertoast.showToast(
-        context: context,
-        msg: "✅ ${device.name}에 성공적으로 연결되었습니다.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Color(0xFF0BB57F),
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
+      if (mounted) {
+        setState(() {
+          _connectionStatus = '연결 완료!';
+        });
 
-      // 잠시 대기 후 이전 화면으로 돌아가기
-      await Future.delayed(Duration(seconds: 1));
-      Navigator.pop(context, true);
+        CustomFluttertoast.showToast(
+          context: context,
+          msg: "✅ ${device.name}에 성공적으로 연결되었습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Color(0xFF0BB57F),
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+
+        // 잠시 대기 후 이전 화면으로 돌아가기
+        await Future.delayed(Duration(seconds: 1));
+        if (mounted) {
+          Navigator.pop(context, true);
+        }
+      }
     } catch (e) {
       print('❌ 연결 실패: $e');
 
-      setState(() {
-        _connectionStatus = '연결 실패';
-      });
+      if (mounted) {
+        setState(() {
+          _connectionStatus = '연결 실패';
+        });
+      }
 
       // 실패 시 정리 작업
       await BluetoothServiceManager.disconnect();
 
-      _showErrorDialog('연결 실패: ${e.toString()}\n\n다시 시도해주세요.');
+      if (mounted) {
+        _showErrorDialog('연결 실패: ${e.toString()}\n\n다시 시도해주세요.');
+      }
     } finally {
-      setState(() {
-        _isConnecting = false;
-        _connectionStatus = '';
-      });
+      if (mounted) {
+        setState(() {
+          _isConnecting = false;
+          _connectionStatus = '';
+        });
+      }
     }
   }
 
   void _showErrorDialog(String message) {
+    if (!mounted) return;
+
     showDialog(
       context: context,
       builder:
@@ -327,9 +363,11 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
               Expanded(
                 child: InkWell(
                   onTap: () {
-                    setState(() {
-                      _showPairedDevices = true;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        _showPairedDevices = true;
+                      });
+                    }
                     _stopDiscovery();
                   },
                   child: Container(
@@ -574,9 +612,20 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
   @override
   void dispose() {
     if (_isDiscovering) {
-      _stopDiscovery();
+      try {
+        BluetoothServiceManager.cancelDiscovery();
+        _isDiscovering = false;
+      } catch (e) {
+        // 오류 발생 시 무시
+      }
     }
-    BluetoothServiceManager.stopConnectionMonitoring();
+
+    try {
+      BluetoothServiceManager.stopConnectionMonitoring();
+    } catch (e) {
+      // 오류 발생 시 무시
+    }
+
     super.dispose();
   }
 }
