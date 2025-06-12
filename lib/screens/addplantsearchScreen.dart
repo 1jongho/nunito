@@ -4,7 +4,7 @@ import 'package:nunito/screens/addplantScreen.dart';
 import 'package:nunito/screens/plantdetailScreen.dart';
 import 'package:nunito/services/plant_api_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AddPlantSearchScreen extends StatefulWidget {
   const AddPlantSearchScreen({super.key});
@@ -115,9 +115,14 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         }
       });
       print('식물 데이터를 가져오는 중 오류 발생: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('식물 정보를 불러오는데 실패했습니다.')));
+      Fluttertoast.showToast(
+        msg: "식물 정보를 불러오는데 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
@@ -154,32 +159,15 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         _isLoadingMore = false;
       });
       print('추가 식물 데이터를 가져오는 중 오류 발생: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('추가 식물 정보를 불러오는데 실패했습니다.')));
+      Fluttertoast.showToast(
+        msg: "추가 식물 정보를 불러오는데 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
-  }
-
-  bool _isValidImageUrl(String url) {
-    if (url.isEmpty) return false;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return false;
-    }
-    String lowerUrl = url.toLowerCase();
-    return lowerUrl.contains('.jpg') ||
-        lowerUrl.contains('.jpeg') ||
-        lowerUrl.contains('.png') ||
-        lowerUrl.contains('.gif') ||
-        lowerUrl.contains('.webp');
-  }
-
-  String _processImageUrl(String url) {
-    if (url.isEmpty) return '';
-    String processedUrl = url.trim();
-    if (processedUrl.startsWith('http://')) {
-      processedUrl = processedUrl.replaceFirst('http://', 'https://');
-    }
-    return processedUrl;
   }
 
   String _getBestImageUrl(Plant plant) {

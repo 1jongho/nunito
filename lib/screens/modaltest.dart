@@ -1,8 +1,8 @@
-// lib/screens/modaltest.dart
 import 'package:flutter/material.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:intl/intl.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class ModalTestScreen extends StatefulWidget {
   const ModalTestScreen({super.key});
@@ -17,8 +17,6 @@ class _ModalTestScreenState extends State<ModalTestScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -87,16 +85,14 @@ class _ModalTestScreenState extends State<ModalTestScreen> {
                     setState(() {
                       _selectedDate = selectedDate;
                     });
-
-                    // 날짜가 선택되었을 때 스낵바 표시
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          '${DateFormat('yyyy년 MM월 dd일').format(selectedDate)} 선택되었습니다',
-                          style: TextStyle(fontFamily: 'Pretendard'),
-                        ),
-                        backgroundColor: customGreen,
-                      ),
+                    Fluttertoast.showToast(
+                      msg:
+                          "${DateFormat('yyyy년 MM월 dd일').format(selectedDate)} 선택되었습니다",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      backgroundColor: Color(0xFF0BB57F),
+                      textColor: Colors.white,
+                      fontSize: 16.0,
                     );
                   },
                   title: '날짜 선택',

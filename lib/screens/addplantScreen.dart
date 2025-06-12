@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nunito/screens/homeScreen.dart';
 import 'package:nunito/screens/plantmyScreen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
@@ -9,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:nunito/services/firebase_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AddPlantScreen extends StatefulWidget {
   final String? scientificName;
@@ -107,8 +107,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       }
     } catch (e) {
       print('❌ 이미지 선택 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('이미지 선택에 실패했습니다.'), backgroundColor: Colors.red),
+      Fluttertoast.showToast(
+        msg: "이미지 선택에 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -182,22 +187,26 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
                               // 1단계에서 필수 필드 검증
                               if (_currentStep == 0) {
                                 if (_nicknameController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('애칭을 입력해주세요.'),
-                                      backgroundColor: Colors.orange,
-                                    ),
+                                  Fluttertoast.showToast(
+                                    msg: "애칭을 입력해주세요.",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.orange,
+                                    textColor: Colors.white,
+                                    fontSize: 16.0,
                                   );
                                   return;
                                 }
                                 if (_scientificNameController.text
                                     .trim()
                                     .isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('학명을 입력해주세요.'),
-                                      backgroundColor: Colors.orange,
-                                    ),
+                                  Fluttertoast.showToast(
+                                    msg: "학명을 입력해주세요.",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.orange,
+                                    textColor: Colors.white,
+                                    fontSize: 16.0,
                                   );
                                   return;
                                 }
@@ -679,15 +688,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       print('✅ 식물 저장 완료: $plantId');
 
       // 성공 메시지
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${_nicknameController.text.trim()}이(가) 추가되었습니다!',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Color(0xFF0BB57F),
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "${_nicknameController.text.trim()}이(가) 추가되었습니다!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
 
       // 내 식물 페이지로 이동 (기존 스택 모두 제거)
@@ -699,15 +706,13 @@ class _AddPlantScreenState extends State<AddPlantScreen> {
       print('❌ 식물 저장 실패: $e');
 
       // 오류 메시지 표시
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '저장 중 오류가 발생했습니다: ${e.toString()}',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "저장 중 오류가 발생했습니다: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } finally {
       setState(() {

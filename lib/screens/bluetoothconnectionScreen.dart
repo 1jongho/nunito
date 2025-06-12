@@ -1,8 +1,7 @@
-// bluetoothconnectionScreen.dart - 개선된 연결 로직
-
 import 'package:flutter/material.dart';
 import 'package:nunito/services/bluetooth_service.dart';
 import 'package:nunito/services/firebase_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class BluetoothConnectionScreen extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -167,16 +166,13 @@ class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
       setState(() {
         _connectionStatus = '연결 완료!';
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '✅ ${device.name}에 성공적으로 연결되었습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Color(0xFF0BB57F),
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "✅ ${device.name}에 성공적으로 연결되었습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
 
       // 잠시 대기 후 이전 화면으로 돌아가기
