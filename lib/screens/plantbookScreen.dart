@@ -4,6 +4,7 @@ import 'package:nunito/screens/addplantScreen.dart';
 import 'package:nunito/screens/plantdetailScreen.dart';
 import 'package:nunito/models/plant.dart';
 import 'package:nunito/services/plant_api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class PlantBookScreen extends StatefulWidget {
   const PlantBookScreen({super.key});
@@ -87,9 +88,14 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
         _hasMoreItems = false;
       });
       print('식물 데이터를 가져오는 중 오류 발생: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('식물 정보를 불러오는데 실패했습니다.')));
+      Fluttertoast.showToast(
+        msg: "식물 정보를 불러오는데 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
@@ -129,9 +135,14 @@ class _PlantBookScreenState extends State<PlantBookScreen> {
         _isLoadingMore = false;
       });
       print('추가 식물 데이터를 가져오는 중 오류 발생: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('추가 식물 정보를 불러오는데 실패했습니다.')));
+      Fluttertoast.showToast(
+        msg: "추가 식물 정보를 불러오는데 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 

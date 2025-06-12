@@ -6,6 +6,7 @@ import 'package:nunito/screens/plantdetailmyScreen.dart';
 import 'package:nunito/screens/bluetoothconnectionScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/services/bluetooth_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async'; // TimeoutException 사용을 위해 추가
 
 class PlantMyScreen extends StatefulWidget {
@@ -44,15 +45,13 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
     // 연결 성공 시 결과 처리
     if (result == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '"$plantName" 블루투스 연결이 완료되었습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Color(0xFF0BB57F),
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "'$plantName' 블루투스가 연결이 완료되었습니다. ",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -122,26 +121,22 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
         isConnected: false,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '"$plantName" 와(과) 블루투스 연결이 해제되었습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "'$plantName' 와(과) 블루투스 연결이 해제되었습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '블루투스 연결 해제에 실패했습니다: ${e.toString()}',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "블루투스 연결 해제에 실패했습니다: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -591,8 +586,13 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('알림 설정 페이지 (준비 중)')),
+                        Fluttertoast.showToast(
+                          msg: "알림 설정 페이지 (준비 중)",
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          backgroundColor: Colors.orange,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
                         );
                       },
                     ),
@@ -766,36 +766,25 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
     // 결과 메시지 표시 (this.context 사용)
     if (mounted && this.context.mounted) {
-      try {
-        if (isSuccess) {
-          ScaffoldMessenger.of(this.context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${plant['nickname']}와(과) 이별하였습니다.',
-                style: TextStyle(fontFamily: 'Pretendard'),
-              ),
-              backgroundColor: Color(0xFF0BB57F),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(this.context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '이별 중 오류가 발생했습니다.',
-                style: TextStyle(fontFamily: 'Pretendard'),
-              ),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        print('✅ 메시지 표시 완료');
-      } catch (snackbarError) {
-        print('⚠️ SnackBar 오류: $snackbarError');
+      if (isSuccess) {
+        Fluttertoast.showToast(
+          msg: "${plant['nickname']}와(과) 이별하였습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Color(0xFF0BB57F),
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      } else {
+        Fluttertoast.showToast(
+          msg: "이별 중 오류가 발생했습니다.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
       }
-    } else {
-      print('⚠️ this.context도 유효하지 않음');
     }
   }
 }
