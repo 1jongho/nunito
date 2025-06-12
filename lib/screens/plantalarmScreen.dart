@@ -4,6 +4,7 @@ import 'package:nunito/widgets/modal/alarm.dart';
 import 'package:nunito/widgets/switch.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/services/notification_service.dart'; // 수정
+import 'package:fluttertoast/fluttertoast.dart';
 
 class PlantAlarmScreen extends StatefulWidget {
   final Map<String, dynamic> plant;
@@ -120,30 +121,26 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
       );
 
       // 성공 메시지
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '알림 설정이 저장되었습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Color(0xFF0BB57F),
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "알림 설정이 저장되었습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
 
       // 이전 화면으로 돌아가기
       Navigator.pop(context);
     } catch (e) {
       print('알림 설정 저장 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '알림 설정 저장에 실패했습니다: ${e.toString()}',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "알림 설정 저장에 실패했습니다: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } finally {
       setState(() {
@@ -162,28 +159,23 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
         body:
             '알림이 정상 작동합니다! 시간: ${DateTime.now().toString().substring(11, 19)}',
       );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '즉시 테스트 알림이 발송되었습니다!',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Color(0xFF0BB57F),
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "즉시 테스트 알림이 발송되었습니다!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } catch (e) {
       print('테스트 알림 발송 실패: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '테스트 알림 발송에 실패했습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "테스트 알림 발송에 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -191,15 +183,13 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
   // 연속 알림 테스트
   Future<void> _sendMultipleTestNotifications() async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '3개의 연속 알림을 발송합니다...',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 2),
-        ),
+      Fluttertoast.showToast(
+        msg: "3개의 연속 알림을 발송합니다...",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
 
       // 3개의 연속 알림 발송 (1초 간격)
@@ -217,15 +207,13 @@ class _PlantAlarmScreenState extends State<PlantAlarmScreen> {
 
       // 앱을 백그라운드로 보내라는 안내
       await Future.delayed(Duration(seconds: 1));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '홈 버튼을 눌러 앱을 백그라운드로 보내보세요!',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "홈 버튼을 눌러 앱을 백그라운드로 보내보세요!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.blue,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } catch (e) {
       print('연속 알림 발송 실패: $e');

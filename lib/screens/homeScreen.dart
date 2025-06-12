@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nunito/screens/plantmyScreen.dart';
-import 'package:nunito/screens/testScreen.dart';
 import 'package:nunito/widgets/navbar.dart';
-import 'package:nunito/screens/plantmyScreen.dart'; // 수정: 내 식물 화면
 import 'package:nunito/screens/addplantsearchScreen.dart';
-import 'package:nunito/screens/settingScreen.dart';
 import 'package:nunito/services/firebase_service.dart'; // Firebase 서비스
 import 'package:cloud_firestore/cloud_firestore.dart'; // Timestamp 사용을 위해 추가
 import 'package:nunito/screens/plantdetailmyScreen.dart';
@@ -90,15 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _currentPage = _myPlants.length - 1;
         }
       });
-      for (int i = 0; i < popularPlants.length; i++) {
-        final plant = popularPlants[i];
-        final viewCount = plant['viewCount'] ?? 0;
-        final updatedAt = plant['updatedAt'] as Timestamp?;
-        // 사용자가 홈화면으로 이동할 시, 조회수 순위를 출력. (임시 주석 처리)
-        /*print(
-          '${i + 1}. ${plant['nickname']} - 조회수: $viewCount회, 업데이트: ${updatedAt?.toDate()}',
-        );*/
-      }
+      for (int i = 0; i < popularPlants.length; i++) {}
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -162,24 +151,6 @@ class _HomeScreenState extends State<HomeScreen> {
               'assets/icon/nunito_logo.svg',
               width: 90,
               height: 32,
-            ),
-          ),
-          Positioned(
-            right: 30,
-            child: IconButton(
-              icon: Icon(
-                Icons.settings_rounded,
-                size: 32,
-                color: Color(0xFF363636),
-              ),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => FirebaseTestScreen()),
-                );
-              },
             ),
           ),
         ],
