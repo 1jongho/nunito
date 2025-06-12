@@ -27,6 +27,7 @@ dependencies:
 
   # 블루투스 패키지 추가
   flutter_blue_plus: ^1.33.0
+  fluttertoast: ^8.2.12
 
 dev_dependencies:
   flutter_launcher_icons: '^0.14.3'
