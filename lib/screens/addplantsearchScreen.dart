@@ -5,6 +5,7 @@ import 'package:nunito/screens/plantdetailScreen.dart';
 import 'package:nunito/services/plant_api_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 
 class AddPlantSearchScreen extends StatefulWidget {
   const AddPlantSearchScreen({super.key});
@@ -115,7 +116,8 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         }
       });
       print('식물 데이터를 가져오는 중 오류 발생: $e');
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "식물 정보를 불러오는데 실패했습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -159,7 +161,8 @@ class _AddPlantSearchScreenState extends State<AddPlantSearchScreen> {
         _isLoadingMore = false;
       });
       print('추가 식물 데이터를 가져오는 중 오류 발생: $e');
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "추가 식물 정보를 불러오는데 실패했습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,

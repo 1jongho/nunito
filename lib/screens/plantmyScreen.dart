@@ -7,7 +7,8 @@ import 'package:nunito/screens/bluetoothconnectionScreen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/services/bluetooth_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'dart:async'; // TimeoutException 사용을 위해 추가
+import 'package:nunito/widgets/toast.dart';
+import 'dart:async';
 
 class PlantMyScreen extends StatefulWidget {
   const PlantMyScreen({super.key});
@@ -45,7 +46,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
 
     // 연결 성공 시 결과 처리
     if (result == true) {
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "'$plantName' 블루투스가 연결이 완료되었습니다. ",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -121,7 +123,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
         isConnected: false,
       );
 
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "'$plantName' 와(과) 블루투스 연결이 해제되었습니다.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -130,7 +133,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
         fontSize: 16.0,
       );
     } catch (e) {
-      Fluttertoast.showToast(
+      CustomFluttertoast.showToast(
+        context: context,
         msg: "블루투스 연결 해제에 실패했습니다: ${e.toString()}",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
@@ -586,7 +590,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
                       ),
                       onTap: () {
                         Navigator.pop(context);
-                        Fluttertoast.showToast(
+                        CustomFluttertoast.showToast(
+                          context: context,
                           msg: "알림 설정 페이지 (준비 중)",
                           toastLength: Toast.LENGTH_SHORT,
                           gravity: ToastGravity.BOTTOM,
@@ -767,7 +772,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
     // 결과 메시지 표시 (this.context 사용)
     if (mounted && this.context.mounted) {
       if (isSuccess) {
-        Fluttertoast.showToast(
+        CustomFluttertoast.showToast(
+          context: context,
           msg: "${plant['nickname']}와(과) 이별하였습니다.",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
@@ -776,7 +782,8 @@ class _PlantMyScreenState extends State<PlantMyScreen> {
           fontSize: 16.0,
         );
       } else {
-        Fluttertoast.showToast(
+        CustomFluttertoast.showToast(
+          context: context,
           msg: "이별 중 오류가 발생했습니다.",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,

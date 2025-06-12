@@ -3,6 +3,7 @@ import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/widgets/navbar.dart';
 import 'package:intl/intl.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:nunito/widgets/toast.dart';
 
 class ModalTestScreen extends StatefulWidget {
   const ModalTestScreen({super.key});
@@ -85,7 +86,8 @@ class _ModalTestScreenState extends State<ModalTestScreen> {
                     setState(() {
                       _selectedDate = selectedDate;
                     });
-                    Fluttertoast.showToast(
+                    CustomFluttertoast.showToast(
+                      context: context,
                       msg:
                           "${DateFormat('yyyy년 MM월 dd일').format(selectedDate)} 선택되었습니다",
                       toastLength: Toast.LENGTH_SHORT,
