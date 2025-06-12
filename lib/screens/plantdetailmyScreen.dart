@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nunito/widgets/modal/date_picker_modal.dart';
 import 'package:nunito/services/firebase_service.dart';
 import 'package:nunito/screens/plantalarmScreen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
 
 class PlantDetailMyScreen extends StatefulWidget {
@@ -163,11 +164,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   // 일지 저장
   Future<void> _saveDiary() async {
     if (_diaryController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('일지 내용을 입력해주세요.'),
-          backgroundColor: Colors.orange,
-        ),
+      Fluttertoast.showToast(
+        msg: "일지 내용을 입력해주세요.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -186,18 +189,22 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
       String dateKey = DateFormat('yyyy-MM-dd').format(selectedDate);
       _diaries[dateKey] = _diaryController.text.trim();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('일지가 저장되었습니다.'),
-          backgroundColor: Color(0xFF0BB57F),
-        ),
+      Fluttertoast.showToast(
+        msg: "일지가 저장되었습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Color(0xFF0BB57F),
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('일지 저장에 실패했습니다: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
+      Fluttertoast.showToast(
+        msg: "일지 저장에 실패했습니다: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } finally {
       setState(() {
@@ -210,15 +217,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
   void _refreshSensorData() {
     if (!_isBluetoothConnected) {
       // 블루투스가 연결되지 않은 경우 경고 메시지
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '블루투스가 연결되지 않았습니다. 센서 데이터를 받을 수 없습니다.',
-            style: TextStyle(fontFamily: 'Pretendard'),
-          ),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "블루투스가 연결되지 않았습니다. 센서 데이터를 받을 수 없습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -229,15 +234,13 @@ class _PlantDetailMyScreenState extends State<PlantDetailMyScreen> {
     });
 
     // 성공 메시지 표시
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '센서 데이터가 새로고침되었습니다.',
-          style: TextStyle(fontFamily: 'Pretendard'),
-        ),
-        backgroundColor: Color(0xFF0BB57F),
-        duration: Duration(seconds: 2),
-      ),
+    Fluttertoast.showToast(
+      msg: "센서 데이터가 새로고침되었습니다.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Color(0xFF0BB57F),
+      textColor: Colors.white,
+      fontSize: 16.0,
     );
   }
 

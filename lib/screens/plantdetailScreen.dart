@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nunito/services/plant_api_service.dart';
 import 'package:nunito/models/plant.dart';
 import 'package:nunito/screens/addplantScreen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 bool _isSeasonGuideExpanded = false;
 
@@ -69,9 +70,14 @@ class _PlantDetailScreenState extends State<PlantDetailScreen> {
         _isLoading = false;
       });
       print('식물 상세 정보를 가져오는 중 오류 발생: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('식물 상세 정보를 불러오는데 실패했습니다.')));
+      Fluttertoast.showToast(
+        msg: "식물 상세 정보를 불러오는데 실패했습니다.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
     }
   }
 
